@@ -90,9 +90,16 @@ export default function Welcome() {
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </LinearGradient>
           </BounceButton>
-          <Pressable onPress={() => router.push("/(auth)/login")} style={s.signinRow} hitSlop={8}>
-            <Text style={s.signinText}>I already have an account</Text>
-          </Pressable>
+          <View style={s.altRow}>
+            <Pressable onPress={() => router.push("/(auth)/login")} hitSlop={8}>
+              <Text style={s.signinText}>Sign in</Text>
+            </Pressable>
+            <View style={s.altDot} />
+            <Pressable onPress={() => router.push("/(auth)/marketplace")} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Ionicons name="storefront-outline" size={15} color={BLUE} />
+              <Text style={[s.signinText, { color: BLUE }]}>Browse marketplace</Text>
+            </Pressable>
+          </View>
         </Animated.View>
       </Animated.View>
     </View>
@@ -226,6 +233,7 @@ const s = StyleSheet.create({
 
   ctaPrimary: { flexDirection: "row", gap: 8, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: BLUE, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   ctaPrimaryText: { color: "#fff", fontSize: 16.5, fontWeight: "800" },
-  signinRow: { alignItems: "center", paddingVertical: 14, marginTop: 2 },
+  altRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, paddingVertical: 14, marginTop: 2 },
+  altDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#CBD5E1" },
   signinText: { color: "#334155", fontSize: 15, fontWeight: "700" },
 });
