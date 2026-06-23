@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   FadeIn,
@@ -33,6 +33,7 @@ const CYAN = "#06B6D4";
 export default function Welcome() {
   const router = useRouter();
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [featured, setFeatured] = useState<Listing[]>([]);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function Welcome() {
     })();
   }, []);
 
-  const heroH = Math.round(Math.min(560, Math.max(360, height * 0.56)));
+  const heroH = Math.round(Math.min(470, Math.max(300, height * 0.48)));
 
   return (
     <View style={s.root}>
@@ -54,7 +55,7 @@ export default function Welcome() {
       <Hero photos={featured.map((f) => f.photo).filter(Boolean) as string[]} height={heroH} />
 
       {/* White sheet lifts over the hero */}
-      <Animated.View entering={FadeInUp.duration(650).springify().damping(18)} style={s.sheet}>
+      <Animated.View entering={FadeInUp.duration(650).springify().damping(18)} style={[s.sheet, { paddingBottom: insets.bottom + 18 }]}>
         <View style={s.grabber} />
 
         <Animated.View entering={FadeInDown.delay(180).duration(600)} style={s.badge}>
@@ -72,7 +73,7 @@ export default function Welcome() {
         </Animated.View>
 
         <Animated.Text entering={FadeInDown.delay(340).duration(600)} style={s.sub}>
-          Leases, online rent, maintenance and reviews — landlords, tenants and seekers, one beautiful app.
+          Leases, online rent, maintenance and reviews — all in one beautiful app.
         </Animated.Text>
 
         <Animated.View entering={FadeInDown.delay(420).duration(600)} style={s.trust}>
@@ -210,13 +211,13 @@ const s = StyleSheet.create({
   floatTop: { fontSize: 9, color: "#94A3B8" },
   floatBot: { fontSize: 13, fontWeight: "800" },
 
-  sheet: { flex: 1, backgroundColor: "#F8FAFC", borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -34, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 26 },
+  sheet: { flex: 1, backgroundColor: "#F8FAFC", borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -34, paddingHorizontal: 24, paddingTop: 12 },
   grabber: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "#E2E8F0", marginBottom: 16 },
 
   badge: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", borderWidth: 1, borderColor: "#BFDBFE", backgroundColor: "#EFF6FF", paddingHorizontal: 13, paddingVertical: 7, borderRadius: 999 },
   badgeText: { fontSize: 12, fontWeight: "700", color: "#1D4ED8" },
 
-  h1: { fontSize: 34, lineHeight: 40, fontWeight: "800", color: "#0F172A", letterSpacing: -0.6 },
+  h1: { fontSize: 31, lineHeight: 37, fontWeight: "800", color: "#0F172A", letterSpacing: -0.6 },
   h1grad: { color: "#000" },
   sub: { fontSize: 15, lineHeight: 22, color: "#475569", marginTop: 12 },
 
@@ -225,6 +226,6 @@ const s = StyleSheet.create({
 
   ctaPrimary: { flexDirection: "row", gap: 8, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: BLUE, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   ctaPrimaryText: { color: "#fff", fontSize: 16.5, fontWeight: "800" },
-  signinRow: { alignItems: "center", paddingVertical: 12 },
+  signinRow: { alignItems: "center", paddingVertical: 14, marginTop: 2 },
   signinText: { color: "#334155", fontSize: 15, fontWeight: "700" },
 });
