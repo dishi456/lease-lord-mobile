@@ -29,7 +29,7 @@ export default function Browse() {
       const res = await api.listings({ q: term, page: nextPage, pageSize: PAGE_SIZE, sort: "newest" });
       setItems((prev) => (replace ? res.items : [...prev, ...res.items]));
       setPage(res.page);
-      setPages(res.pages);
+      setPages(res.pages ?? res.totalPages ?? 1);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load listings.");

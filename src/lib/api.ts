@@ -196,8 +196,10 @@ export const api = {
   markRead: (id?: string) => request<{ ok: true }>("POST", "/notifications/read", { body: id ? { id } : {} }),
 
   // user / public
+  // `pages` (our backend) and `totalPages` (the live prebuildapps.com backend)
+  // are both accepted so pagination works against either deployment.
   listings: (q: Record<string, string | number | undefined>) =>
-    request<{ items: Listing[]; total: number; page: number; pageSize: number; pages: number }>("GET", "/listings", { auth: false, query: q }),
+    request<{ items: Listing[]; total: number; page: number; pageSize: number; pages?: number; totalPages?: number }>("GET", "/listings", { auth: false, query: q }),
   listingDetail: (idOrRef: string) => request<ListingDetail>("GET", `/listings/${idOrRef}`, { auth: false }),
   enquiries: () => request<{ items: Enquiry[] }>("GET", "/account/enquiries"),
   updateAccount: (b: Partial<{ fullName: string; phone: string; avatarUrl: string }>) =>
