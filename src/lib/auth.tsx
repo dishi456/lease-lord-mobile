@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api, clearToken, loadToken, saveToken, type Me } from "./api";
 
-type AuthState = {
+export type AuthState = {
   user: Me | null;
   loading: boolean; // initial token bootstrap
   signIn: (email: string, password: string, otp?: string) => Promise<void>;

@@ -1,13 +1,16 @@
 import { RefreshControl, View } from "react-native";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Card, Muted, Body, Badge, Loading, ErrorText, Empty, money } from "@/components/ui";
+import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty, money } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
 import { colors } from "@/lib/theme";
 
 export default function Properties() {
+  const router = useRouter();
+  // useAsync already refetches on focus, so a newly listed property shows up.
   const { data, loading, refreshing, error, refresh } = useAsync(() => api.landlordProperties());
   if (loading) return <Loading />;
   const items = data?.items ?? [];
@@ -15,8 +18,9 @@ export default function Properties() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
       <ErrorText>{error}</ErrorText>
+      <Button title="＋ List a property" onPress={() => router.push("/(landlord)/property-new")} />
       {items.length === 0 ? (
-        <Empty title="No properties" subtitle="Add properties from the web portal." />
+        <Empty title="No properties yet" subtitle="Tap “List a property” to add your first one." />
       ) : (
         items.map((p) => (
           <Card key={p.id} style={{ padding: 0, overflow: "hidden" }}>

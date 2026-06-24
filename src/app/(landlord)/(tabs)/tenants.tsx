@@ -1,12 +1,15 @@
 import { Linking, RefreshControl, View } from "react-native";
 import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Card, Muted, Body, Badge, Loading, ErrorText, Empty } from "@/components/ui";
+import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
 export default function Tenants() {
+  const router = useRouter();
+  // useAsync already refetches on focus, so a new tenant shows up automatically.
   const { data, loading, refreshing, error, refresh } = useAsync(() => api.landlordTenants());
   if (loading) return <Loading />;
   const items = data?.items ?? [];
@@ -14,8 +17,9 @@ export default function Tenants() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
       <ErrorText>{error}</ErrorText>
+      <Button title="＋ Add tenant" onPress={() => router.push("/(landlord)/tenant-new")} />
       {items.length === 0 ? (
-        <Empty title="No tenants" subtitle="Add tenants from the web portal." />
+        <Empty title="No tenants yet" subtitle="Add a tenant directly, or approve a request from 'Tenant requests' in More." />
       ) : (
         items.map((t) => (
           <Card key={t.id} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

@@ -66,7 +66,7 @@ export default function LandlordHome() {
           { label: "Tenants", value: data?.tenants ?? 0, icon: "people", color: "#0EA5E9" },
           { label: "Expiring soon", value: data?.expiringSoon ?? 0, icon: "time", color: "#D97706" },
           { label: "Open maintenance", value: data?.openMaintenance ?? 0, icon: "construct", color: "#8B5CF6" },
-          { label: "Open complaints", value: data?.openComplaints ?? 0, icon: "chatbubbles", color: "#DC2626" },
+          { label: "Tenant requests", value: data?.pendingApplications ?? 0, icon: "person-add", color: "#DC2626" },
         ]} />
 
         <Text style={s.section}>Quick actions</Text>
@@ -83,6 +83,8 @@ export default function LandlordHome() {
       </ScrollView>
 
       <AccountMenu visible={menuOpen} onClose={() => setMenuOpen(false)} items={[
+        { icon: "person-add-outline", label: "Tenant requests", onPress: () => router.push("/(landlord)/applications") },
+        { icon: "calendar-outline", label: "Visit requests", onPress: () => router.push("/(landlord)/visits") },
         { icon: "document-text-outline", label: "Leases", onPress: () => router.push("/(landlord)/leases") },
         { icon: "star-outline", label: "Rate tenants", onPress: () => router.push("/(landlord)/reviews") },
         { icon: "notifications-outline", label: "Notifications", onPress: () => router.push("/(tenant)/notifications") },
