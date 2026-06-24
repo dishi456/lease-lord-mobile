@@ -219,6 +219,10 @@ function unwrap<T = any>(d: any, ...keys: string[]): T {
   for (const k of keys) if (d && typeof d === "object" && d[k] != null) return d[k] as T;
   return d as T;
 }
+// The live backend sends `property`/`tenant` as objects ({id,name}/{id,fullName});
+// screens render them as strings. Flatten to a name so React never gets an object.
+const pName = (p: any): string => (typeof p === "string" ? p : p?.name ?? "");
+const tName = (t: any): string => (typeof t === "string" ? t : t?.fullName ?? t?.name ?? "");
 
 // ---- API surface -----------------------------------------------------------
 export const api = {
@@ -242,12 +246,20 @@ export const api = {
   // tenant
   dashboard: () =>
     request<any>("GET", "/tenant/dashboard").then((d) => ({
-      lease: d.lease ?? null,
+      lease: d.lease
+        ? { ...d.lease, property: typeof d.lease.property === "string" ? { name: d.lease.property, address: "" } : d.lease.property ?? { name: "", address: "" } }
+        : null,
       nextInvoice: d.nextInvoice ?? null,
       openMaintenanceCount: d.openMaintenanceCount ?? d.openMaintenance ?? 0,
       unreadNotifications: d.unreadNotifications ?? 0,
     } as Dashboard)),
-  lease: () => request<any>("GET", "/tenant/lease").then((d) => ({ lease: (d.lease ?? d.activeLease ?? null) as Lease | null })),
+  lease: () =>
+    request<any>("GET", "/tenant/lease").then((d) => {
+      const l = d.lease ?? d.activeLease ?? null;
+      // backend sends landlord as {fullName,...}; app reads {name, phone}.
+      if (l && l.landlord) l.landlord = { name: l.landlord.name ?? l.landlord.fullName ?? "", phone: l.landlord.phone ?? null };
+      return { lease: l as Lease | null };
+    }),
   giveNotice: () => request<{ ok: true; noticeEffectiveDate: string }>("POST", "/tenant/lease/notice", { body: {} }),
   invoices: () => request<any>("GET", "/tenant/invoices").then((d) => ({ items: rows<Invoice>(d, "items", "invoices") })),
   payments: () => request<any>("GET", "/tenant/payments").then((d) => ({ items: rows<Payment>(d, "items", "payments") })),
@@ -303,27 +315,27 @@ export const api = {
     } as LandlordDashboard & { pendingApplications: number })),
   landlordProperties: () => request<any>("GET", "/landlord/properties").then((d) => ({ items: rows<LProperty>(d, "items", "properties") })),
   landlordTenants: () => request<any>("GET", "/landlord/tenants").then((d) => ({ items: rows<LTenant>(d, "items", "tenants") })),
-  landlordLeases: () => request<any>("GET", "/landlord/leases").then((d) => ({ items: rows<LLease>(d, "items", "leases") })),
+  landlordLeases: () => request<any>("GET", "/landlord/leases").then((d) => ({ items: rows<any>(d, "items", "leases").map((l) => ({ ...l, property: pName(l.property), tenant: tName(l.tenant) })) as LLease[] })),
   // Live exposes rent collection at `/landlord/rent` → `{ invoices }` (no kpis).
   landlordInvoices: () =>
     request<any>("GET", "/landlord/rent").then((d) => ({
       kpis: d.kpis ?? { collectedThisMonth: 0, pending: 0, overdue: 0 },
-      items: rows<LInvoice>(d, "items", "invoices"),
+      items: rows<any>(d, "items", "invoices").map((i) => ({ ...i, property: pName(i.property), tenant: tName(i.tenant) })) as LInvoice[],
     })),
   // Recording a manual rent payment: live uses POST /landlord/rent/record.
   landlordPayInvoice: (id: string, method: string) => request<{ ok: true }>("POST", "/landlord/rent/record", { body: { invoiceId: id, method } }),
   landlordRemindInvoice: (id: string) => request<{ ok: true }>("POST", "/landlord/rent/remind", { body: { invoiceId: id } }),
-  landlordMaintenance: (status?: string) => request<any>("GET", "/landlord/maintenance", { query: { status } }).then((d) => ({ items: rows<LMaintenance>(d, "items", "requests") })),
+  landlordMaintenance: (status?: string) => request<any>("GET", "/landlord/maintenance", { query: { status } }).then((d) => ({ items: rows<any>(d, "items", "requests").map((m) => ({ ...m, property: pName(m.property), tenant: tName(m.tenant) })) as LMaintenance[] })),
   // Live updates a request via PATCH /landlord/maintenance/{id}.
   landlordUpdateMaintenance: (id: string, b: { status?: string; assignedTo?: string }) => request<{ ok: true }>("PATCH", `/landlord/maintenance/${id}`, { body: b }),
-  landlordComplaints: () => request<any>("GET", "/landlord/complaints").then((d) => ({ items: rows<LComplaint>(d, "items", "complaints") })),
+  landlordComplaints: () => request<any>("GET", "/landlord/complaints").then((d) => ({ items: rows<any>(d, "items", "complaints").map((c) => ({ ...c, property: pName(c.property) || null, tenant: tName(c.tenant) })) as LComplaint[] })),
   // Live: status via PATCH /landlord/complaints/{id}; message via POST /{id}/messages.
   landlordRespondComplaint: async (id: string, b: { body?: string; status?: string }) => {
     if (b.body) await request("POST", `/landlord/complaints/${id}/messages`, { body: { body: b.body } });
     if (b.status) await request("PATCH", `/landlord/complaints/${id}`, { body: { status: b.status } });
     return OK;
   },
-  landlordInquiries: () => request<any>("GET", "/landlord/inquiries").then((d) => ({ items: rows<LInquiry>(d, "items", "inquiries") })),
+  landlordInquiries: () => request<any>("GET", "/landlord/inquiries").then((d) => ({ items: rows<any>(d, "items", "inquiries").map((i) => ({ ...i, property: pName(i.property), guestName: i.guestName ?? "" })) as LInquiry[] })),
   // Rental applications (tenant requests): list + approve/reject.
   landlordApplications: () =>
     request<any>("GET", "/landlord/applications").then((d) => ({
@@ -428,9 +440,23 @@ export const api = {
   adminPayments: (status?: string) =>
     request<any>("GET", "/admin/payments", { query: { status } }).then((d) => ({
       kpis: d.kpis ?? { totalCollected: 0, thisMonth: 0, outstanding: 0, refunded: 0 },
-      items: rows<AdminPayment>(d, "items", "payments"),
+      items: rows<any>(d, "items", "payments").map((p) => ({ ...p, tenant: tName(p.tenant), property: pName(p.property) })) as AdminPayment[],
     })),
-  adminReviews: (status?: string) => request<any>("GET", "/admin/reviews", { query: { status } }).then((d) => ({ items: rows<AdminReview>(d, "items", "ratings", "reviews") })),
+  adminReviews: (status?: string) =>
+    request<any>("GET", "/admin/reviews", { query: { status } }).then((d) => ({
+      items: rows<any>(d, "items", "ratings", "reviews").map((r) => ({
+        id: r.id,
+        stars: r.stars,
+        feedback: r.feedback ?? null,
+        direction: r.direction,
+        status: r.status,
+        createdAt: r.createdAt,
+        // backend sends rater/ratee objects; app shows from/to strings.
+        from: typeof r.from === "string" ? r.from : tName(r.rater),
+        fromRole: r.fromRole ?? (r.direction === "LANDLORD_TO_TENANT" ? "LANDLORD" : "TENANT"),
+        to: typeof r.to === "string" ? r.to : tName(r.ratee),
+      })) as AdminReview[],
+    })),
   // Live moderates via PATCH /admin/reviews/{id}.
   adminModerateReview: (id: string, status: string) => request<{ ok: true }>("PATCH", `/admin/reviews/${id}`, { body: { status } }),
   adminActivity: () =>
