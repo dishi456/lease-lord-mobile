@@ -173,6 +173,12 @@ export type LandlordDashboard = {
   rating: number | null; unreadInquiries: number;
 };
 export type LProperty = { id: string; ref: string | null; name: string; address: string; type: string; rent: number; availability: string; approved: boolean; verified: boolean; listedPublic: boolean; photo: string | null; tenants: string[] };
+export type LPropertyDetail = {
+  id: string; ref: string | null; name: string; type: string; address: string; description: string | null;
+  rentAmount: number; securityDeposit: number; rooms: number | null; bathrooms: number | null; areaSqft: number | null;
+  furnishing: string; availability: string; listedPublic: boolean; approved: boolean; verified: boolean;
+  amenities: string[]; photos: string[]; [k: string]: unknown;
+};
 export type LTenant = { id: string; fullName: string; email: string; phone: string | null; status: string; verified: boolean; property: string | null };
 export type LLease = { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: string; tenant: string };
 export type LInvoice = { id: string; periodMonth: string; amount: number; dueDate: string; status: string; property: string; tenant: string };
@@ -202,6 +208,9 @@ export type AdminUser = { id: string; fullName: string; email: string; phone: st
 export type AdminPayment = { id: string; amount: number; method: string; status: string; paidAt: string | null; createdAt: string; tenant: string; property: string };
 export type AdminReview = { id: string; stars: number; feedback: string | null; direction: string; status: string; createdAt: string; from: string; fromRole: string; to: string };
 export type AuditEntry = { id: string; action: string; entity: string; entityId: string | null; actor: string; createdAt: string };
+export type AdminLease = { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: string; landlord: string; tenant: string };
+export type AdminMaintenance = { id: string; title: string; priority: string; status: string; images: string[]; property: string; landlord: string; tenant: string; createdAt: string };
+export type InquiryMsg = { id: string; fromGuest: boolean; body: string; createdAt: string };
 
 // ---- Live-backend normalization -------------------------------------------
 // The live prebuildapps.com backend wraps lists in per-resource envelopes
@@ -371,6 +380,8 @@ export const api = {
     request<{ ok: true }>("PATCH", `/landlord/visits/${id}`, { body: { action } }),
   // List a new property (matches the live POST /landlord/properties schema).
   landlordCreateProperty: (b: NewProperty) => request<{ ok: true; id: string }>("POST", "/landlord/properties", { body: b }),
+  landlordPropertyDetail: (id: string) => request<any>("GET", `/landlord/properties/${id}`).then((d) => unwrap<LPropertyDetail>(d, "property")),
+  landlordUpdateProperty: (id: string, b: Record<string, unknown>) => request<{ ok: true }>("PATCH", `/landlord/properties/${id}`, { body: b }),
   // Add a tenant directly (requires the new backend POST /landlord/tenants).
   landlordAddTenant: (b: { fullName: string; email: string; password: string; phone?: string; governmentId?: string }) =>
     request<{ ok: true; id: string }>("POST", "/landlord/tenants", { body: b }),
@@ -463,4 +474,16 @@ export const api = {
     request<any>("GET", "/admin/activity").then((d) => ({
       items: rows<any>(d, "items", "activity").map((a) => ({ ...a, actor: typeof a.actor === "string" ? a.actor : a.actor?.fullName ?? "" })) as AuditEntry[],
     })),
+  adminLeases: () =>
+    request<any>("GET", "/admin/leases").then((d) => ({
+      items: rows<any>(d, "items", "leases").map((l) => ({ ...l, property: pName(l.property), landlord: tName(l.landlord), tenant: tName(l.tenant) })) as AdminLease[],
+    })),
+  adminMaintenance: (status?: string) =>
+    request<any>("GET", "/admin/maintenance", { query: { status } }).then((d) => ({
+      items: rows<any>(d, "items", "requests", "maintenance").map((m) => ({ ...m, property: pName(m.property), landlord: tName(m.landlord), tenant: tName(m.tenant) })) as AdminMaintenance[],
+    })),
+
+  // landlord inquiry chat
+  landlordInquiryThread: (id: string) => request<any>("GET", `/landlord/inquiries/${id}`).then((d) => ({ messages: rows<InquiryMsg>(d, "messages", "items") })),
+  landlordReplyInquiry: (id: string, body: string) => request<{ ok: true }>("POST", `/landlord/inquiries/${id}`, { body: { body } }),
 };

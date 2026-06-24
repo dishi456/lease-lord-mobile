@@ -16,12 +16,14 @@ export default function LandlordLayout() {
       <Stack.Screen name="applications" options={{ title: "Tenant requests" }} />
       <Stack.Screen name="visits" options={{ title: "Visit requests" }} />
       <Stack.Screen name="property-new" options={{ title: "List a property", presentation: "modal" }} />
+      <Stack.Screen name="property/[id]" options={{ title: "Property" }} />
       <Stack.Screen name="tenant-new" options={{ title: "Add tenant", presentation: "modal" }} />
       <Stack.Screen name="maintenance" options={{ title: "Maintenance" }} />
       <Stack.Screen name="complaints" options={{ title: "Complaints" }} />
       <Stack.Screen name="leases" options={{ title: "Leases" }} />
       <Stack.Screen name="reviews" options={{ title: "Rate tenants" }} />
-      <Stack.Screen name="inquiries" options={{ title: "Enquiries" }} />
+      <Stack.Screen name="inquiries/index" options={{ title: "Enquiries" }} />
+      <Stack.Screen name="inquiries/[id]" options={{ title: "Chat" }} />
     </Stack>
   );
 }

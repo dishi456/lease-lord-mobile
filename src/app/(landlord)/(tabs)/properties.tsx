@@ -1,4 +1,4 @@
-import { RefreshControl, View } from "react-native";
+import { Pressable, RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +23,8 @@ export default function Properties() {
         <Empty title="No properties yet" subtitle="Tap “List a property” to add your first one." />
       ) : (
         items.map((p) => (
-          <Card key={p.id} style={{ padding: 0, overflow: "hidden" }}>
+          <Pressable key={p.id} onPress={() => router.push(`/(landlord)/property/${p.id}`)}>
+          <Card style={{ padding: 0, overflow: "hidden" }}>
             {p.photo ? (
               <Image source={{ uri: fileUrl(p.photo) }} style={{ width: "100%", height: 150 }} contentFit="cover" />
             ) : (
@@ -44,6 +45,7 @@ export default function Properties() {
               </View>
             </View>
           </Card>
+          </Pressable>
         ))
       )}
     </Screen>
