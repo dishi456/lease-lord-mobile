@@ -273,11 +273,19 @@ export const api = {
   invoices: () => request<any>("GET", "/tenant/invoices").then((d) => ({ items: rows<Invoice>(d, "items", "invoices") })),
   payments: () => request<any>("GET", "/tenant/payments").then((d) => ({ items: rows<Payment>(d, "items", "payments") })),
   maintenance: () => request<any>("GET", "/tenant/maintenance").then((d) => ({ items: rows<Maintenance>(d, "items", "requests") })),
-  maintenanceDetail: (id: string) => request<any>("GET", `/tenant/maintenance/${id}`).then((d) => unwrap<MaintenanceDetail>(d, "request", "maintenance")),
+  maintenanceDetail: (id: string) =>
+    request<any>("GET", `/tenant/maintenance/${id}`).then((d) => {
+      const x = unwrap<any>(d, "request", "maintenance");
+      return { ...x, images: Array.isArray(x.images) ? x.images : [] } as MaintenanceDetail;
+    }),
   createMaintenance: (b: { title: string; description: string; priority: string; imageUrls?: string[] }) =>
     request<{ id: string }>("POST", "/tenant/maintenance", { body: b }),
   complaints: () => request<any>("GET", "/tenant/complaints").then((d) => ({ items: rows<Complaint>(d, "items", "complaints") })),
-  complaintDetail: (id: string) => request<any>("GET", `/tenant/complaints/${id}`).then((d) => unwrap<ComplaintDetail>(d, "complaint")),
+  complaintDetail: (id: string) =>
+    request<any>("GET", `/tenant/complaints/${id}`).then((d) => {
+      const x = unwrap<any>(d, "complaint");
+      return { ...x, messages: Array.isArray(x.messages) ? x.messages : [] } as ComplaintDetail;
+    }),
   createComplaint: (b: { subject: string; description: string }) =>
     request<{ id: string }>("POST", "/tenant/complaints", { body: b }),
   replyComplaint: (id: string, body: string) =>
@@ -301,7 +309,11 @@ export const api = {
   // user / public — `pages`/`totalPages` both accepted for pagination.
   listings: (q: Record<string, string | number | undefined>) =>
     request<{ items: Listing[]; total: number; page: number; pageSize: number; pages?: number; totalPages?: number }>("GET", "/listings", { auth: false, query: q }),
-  listingDetail: (idOrRef: string) => request<any>("GET", `/listings/${idOrRef}`, { auth: false }).then((d) => unwrap<ListingDetail>(d, "listing", "property")),
+  listingDetail: (idOrRef: string) =>
+    request<any>("GET", `/listings/${idOrRef}`, { auth: false }).then((d) => {
+      const x = unwrap<any>(d, "listing", "property");
+      return { ...x, photos: Array.isArray(x.photos) ? x.photos : [], amenities: Array.isArray(x.amenities) ? x.amenities : [] } as ListingDetail;
+    }),
   enquiries: () => request<any>("GET", "/account/enquiries").then((d) => ({ items: rows<Enquiry>(d, "items", "inquiries", "enquiries") })),
   updateAccount: (b: Partial<{ fullName: string; phone: string; avatarUrl: string }>) =>
     request<{ ok: true }>("PATCH", "/account/profile", { body: b }),
@@ -322,7 +334,7 @@ export const api = {
       unreadInquiries: d.unreadInquiries ?? d.unreadNotifications ?? 0,
       pendingApplications: d.pendingApplications ?? 0,
     } as LandlordDashboard & { pendingApplications: number })),
-  landlordProperties: () => request<any>("GET", "/landlord/properties").then((d) => ({ items: rows<LProperty>(d, "items", "properties") })),
+  landlordProperties: () => request<any>("GET", "/landlord/properties").then((d) => ({ items: rows<any>(d, "items", "properties").map((p) => ({ ...p, tenants: Array.isArray(p.tenants) ? p.tenants : [] })) as LProperty[] })),
   landlordTenants: () => request<any>("GET", "/landlord/tenants").then((d) => ({ items: rows<LTenant>(d, "items", "tenants") })),
   landlordLeases: () => request<any>("GET", "/landlord/leases").then((d) => ({ items: rows<any>(d, "items", "leases").map((l) => ({ ...l, property: pName(l.property), tenant: tName(l.tenant) })) as LLease[] })),
   // Live exposes rent collection at `/landlord/rent` → `{ invoices }` (no kpis).
@@ -380,7 +392,11 @@ export const api = {
     request<{ ok: true }>("PATCH", `/landlord/visits/${id}`, { body: { action } }),
   // List a new property (matches the live POST /landlord/properties schema).
   landlordCreateProperty: (b: NewProperty) => request<{ ok: true; id: string }>("POST", "/landlord/properties", { body: b }),
-  landlordPropertyDetail: (id: string) => request<any>("GET", `/landlord/properties/${id}`).then((d) => unwrap<LPropertyDetail>(d, "property")),
+  landlordPropertyDetail: (id: string) =>
+    request<any>("GET", `/landlord/properties/${id}`).then((d) => {
+      const x = unwrap<any>(d, "property");
+      return { ...x, photos: Array.isArray(x.photos) ? x.photos : [], amenities: Array.isArray(x.amenities) ? x.amenities : [] } as LPropertyDetail;
+    }),
   landlordUpdateProperty: (id: string, b: Record<string, unknown>) => request<{ ok: true }>("PATCH", `/landlord/properties/${id}`, { body: b }),
   // Add a tenant directly (requires the new backend POST /landlord/tenants).
   landlordAddTenant: (b: { fullName: string; email: string; password: string; phone?: string; governmentId?: string }) =>
