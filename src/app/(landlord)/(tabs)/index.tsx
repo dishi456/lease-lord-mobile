@@ -21,6 +21,10 @@ const QUICK = [
   { icon: "construct", label: "Maintenance", href: "/(landlord)/maintenance", color: "#0EA5E9" },
   { icon: "chatbubbles", label: "Complaints", href: "/(landlord)/complaints", color: "#8B5CF6" },
   { icon: "mail", label: "Enquiries", href: "/(landlord)/inquiries", color: "#059669" },
+  { icon: "person-add", label: "Tenant requests", href: "/(landlord)/applications", color: "#DC2626" },
+  { icon: "calendar", label: "Visit requests", href: "/(landlord)/visits", color: "#D97706" },
+  { icon: "star", label: "Reviews", href: "/(landlord)/reviews", color: "#F59E0B" },
+  { icon: "document-text", label: "Leases", href: "/(landlord)/leases", color: "#0891B2" },
 ] as const;
 
 export default function LandlordHome() {
@@ -104,8 +108,8 @@ const s = StyleSheet.create({
   collectValue: { fontSize: 30, fontWeight: "800", color: colors.text, marginTop: 4 },
   collectSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   section: { fontSize: 17, fontWeight: "800", color: colors.text, marginTop: 24, marginBottom: 12 },
-  quickRow: { flexDirection: "row", gap: 10 },
-  quick: { flex: 1, alignItems: "center", gap: 8 },
+  quickRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 18 },
+  quick: { width: "23%", alignItems: "center", gap: 8 },
   quickIcon: { width: 54, height: 54, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   quickLabel: { fontSize: 11, color: colors.text, fontWeight: "600", textAlign: "center" },
 });

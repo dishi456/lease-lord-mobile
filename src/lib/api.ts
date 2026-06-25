@@ -345,7 +345,12 @@ export const api = {
 
   // user / public — `pages`/`totalPages` both accepted for pagination.
   listings: (q: Record<string, string | number | undefined>) =>
-    request<{ items: Listing[]; total: number; page: number; pageSize: number; pages?: number; totalPages?: number }>("GET", "/listings", { auth: false, query: q }),
+    request<any>("GET", "/listings", { auth: false, query: q }).then((d) => ({
+      // The backend returns `address` but not `city`; fall back so cards aren't blank.
+      items: rows<any>(d, "items").map((it) => ({ ...it, city: it.city ?? it.address ?? "" })) as Listing[],
+      total: d.total ?? 0, page: d.page ?? 1, pageSize: d.pageSize ?? 20,
+      pages: d.pages ?? d.totalPages, totalPages: d.totalPages ?? d.pages,
+    })),
   listingDetail: (idOrRef: string) =>
     request<any>("GET", `/listings/${idOrRef}`, { auth: false }).then((d) => {
       const x = unwrap<any>(d, "listing", "property");

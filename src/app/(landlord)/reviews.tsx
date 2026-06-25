@@ -56,7 +56,9 @@ export default function Reviews() {
   async function submit(leaseId: string) {
     setBusy(true);
     try {
-      await api.landlordRateTenant({ leaseId, stars: c.conduct, criteria: c, feedback: feedback.trim() || undefined, recommend });
+      const vals = Object.values(c);
+      const overall = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      await api.landlordRateTenant({ leaseId, stars: overall, criteria: c, feedback: feedback.trim() || undefined, recommend });
       Alert.alert("Submitted", "Your review of the tenant was saved.");
       setOpen(null); setFeedback(""); reload();
     } catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Failed"); }
