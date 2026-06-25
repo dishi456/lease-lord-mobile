@@ -44,3 +44,6 @@ example
 
 # Local env (do not commit)
 .env
+
+# local dev logs
+metro.log
