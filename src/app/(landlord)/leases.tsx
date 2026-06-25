@@ -1,9 +1,11 @@
 import { RefreshControl, View } from "react-native";
-import { Screen, Card, Muted, Body, Badge, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
+import { useRouter } from "expo-router";
+import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 
 export default function Leases() {
+  const router = useRouter();
   const { data, loading, refreshing, error, refresh } = useAsync(() => api.landlordLeases());
   if (loading) return <Loading />;
   const items = data?.items ?? [];
@@ -11,8 +13,9 @@ export default function Leases() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
       <ErrorText>{error}</ErrorText>
+      <Button title="＋ New lease" onPress={() => router.push("/(landlord)/lease-new")} />
       {items.length === 0 ? (
-        <Empty title="No leases" />
+        <Empty title="No leases" subtitle="Tap “New lease” to create one." />
       ) : (
         items.map((l) => (
           <Card key={l.id}>

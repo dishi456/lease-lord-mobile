@@ -387,6 +387,9 @@ export const api = {
   landlordProperties: () => request<any>("GET", "/landlord/properties").then((d) => ({ items: rows<any>(d, "items", "properties").map((p) => ({ ...p, tenants: Array.isArray(p.tenants) ? p.tenants : [] })) as LProperty[] })),
   landlordTenants: () => request<any>("GET", "/landlord/tenants").then((d) => ({ items: rows<LTenant>(d, "items", "tenants") })),
   landlordLeases: () => request<any>("GET", "/landlord/leases").then((d) => ({ items: rows<any>(d, "items", "leases").map((l) => ({ ...l, property: pName(l.property), tenant: tName(l.tenant) })) as LLease[] })),
+  // Create a lease for a managed tenant on one of the landlord's properties.
+  landlordCreateLease: (b: { tenantId: string; propertyId: string; monthlyRent: number; securityDeposit?: number; maintenanceFee?: number; startDate: string; endDate: string; noticePeriodDays?: number; terms?: string }) =>
+    request<{ ok: true; id: string }>("POST", "/landlord/leases", { body: b }),
   // Live exposes rent collection at `/landlord/rent` → `{ invoices }` (no kpis).
   landlordInvoices: () =>
     request<any>("GET", "/landlord/rent").then((d) => ({
