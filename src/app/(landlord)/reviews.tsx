@@ -41,7 +41,7 @@ function ReviewRow({ r, who }: { r: ReviewView; who: string }) {
 }
 
 export default function Reviews() {
-  const { data, loading, error, reload } = useAsync(() => Promise.all([api.landlordPendingReviews(), api.landlordReviews()]));
+  const { data, loading, error, reload } = useAsync(() => Promise.all([api.landlordPendingReviews(), api.landlordReviews(), api.landlordBlacklist()]));
   const [open, setOpen] = useState<string | null>(null);
   const [c, setC] = useState<TenantCriteria>({ rentDiscipline: 5, propertyMaintenance: 5, communication: 5, ruleCompliance: 5, conduct: 5 });
   const [feedback, setFeedback] = useState("");
@@ -52,6 +52,12 @@ export default function Reviews() {
   const pending = data?.[0]?.items ?? [];
   const received = data?.[1]?.received ?? [];
   const given = data?.[1]?.given ?? [];
+  const blacklisted = data?.[2]?.items ?? [];
+
+  async function removeBl(tenantId: string) {
+    setBusy(true);
+    try { await api.landlordRemoveBlacklist(tenantId); reload(); } catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Failed"); } finally { setBusy(false); }
+  }
 
   async function submit(leaseId: string) {
     setBusy(true);
@@ -114,6 +120,24 @@ export default function Reviews() {
           {given.map((r) => <ReviewRow key={r.id} r={r} who="Tenant" />)}
         </>
       ) : null}
+
+      <H2>Blacklisted tenants</H2>
+      <Muted>Blacklist a tenant with a reason from their profile (Tenants → tap a tenant).</Muted>
+      {blacklisted.length === 0 ? (
+        <Empty title="No blacklisted tenants" />
+      ) : (
+        blacklisted.map((b) => (
+          <Card key={b.tenantId} style={{ gap: 6 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="ban" size={16} color={colors.danger} />
+              <Body style={{ fontWeight: "700", flex: 1 }}>{b.tenant.fullName}</Body>
+              <Muted style={{ fontSize: 11 }}>{shortDate(b.createdAt)}</Muted>
+            </View>
+            <Muted>{b.reason}</Muted>
+            <Button title="Remove from blacklist" variant="secondary" onPress={() => removeBl(b.tenantId)} loading={busy} />
+          </Card>
+        ))
+      )}
     </Screen>
   );
 }

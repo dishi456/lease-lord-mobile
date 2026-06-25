@@ -235,10 +235,16 @@ export type TenantCriteria = { rentDiscipline: number; propertyMaintenance: numb
 export type ReviewView = { id: string; stars: number; feedback: string | null; recommend: boolean; createdAt: string; counterparty: string; property: string };
 export type ReviewBundle = { given: ReviewView[]; received: ReviewView[] };
 // Full tenant detail a landlord can open from the tenants list.
+export type LTenantHistoryLease = { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: { id: string; name: string; address: string; city: string | null } | null; landlord: { id: string; fullName: string } | null; mine: boolean };
+export type LTenantReview = { id: string; stars: number; feedback: string | null; recommend: boolean; by: string; property: string | null; createdAt: string };
 export type LTenantDetail = {
-  tenant: { id: string; fullName: string; email: string; phone: string | null; verified: boolean; governmentId: string | null; emergencyContact: string | null; avatarUrl: string | null } | null;
-  leases: { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: { id: string; name: string } | null }[];
+  tenant: { id: string; fullName: string; email: string; phone: string | null; verified: boolean; governmentId: string | null; emergencyContact: string | null; avatarUrl: string | null; username: string | null } | null;
+  rating: number | null; ratingCount: number;
+  blacklist: { reason: string; createdAt: string } | null;
+  leases: LTenantHistoryLease[];
+  reviews: LTenantReview[];
 };
+export type BlacklistEntry = { tenantId: string; reason: string; createdAt: string; tenant: { id: string; fullName: string; email: string; avatarUrl: string | null } };
 // A rental application = a prospective tenant requesting a property. The landlord
 // approves/rejects (mirrors the website's /landlord/applications flow).
 export type LApplication = { id: string; fullName: string; email: string; phone: string | null; message: string | null; status: string; createdAt: string; property: string };
@@ -567,8 +573,16 @@ export const api = {
   landlordTenant: (id: string) =>
     request<any>("GET", `/landlord/tenants/${id}`).then((d) => ({
       tenant: d.tenant ?? null,
-      leases: rows<any>(d, "leases").map((l) => ({ ...l, monthlyRent: Number(l.monthlyRent ?? 0), property: l.property ?? null })),
+      rating: d.rating ?? null,
+      ratingCount: d.ratingCount ?? 0,
+      blacklist: d.blacklist ?? null,
+      leases: rows<any>(d, "leases").map((l) => ({ ...l, monthlyRent: Number(l.monthlyRent ?? 0), property: l.property ?? null, landlord: l.landlord ?? null })),
+      reviews: rows<any>(d, "reviews"),
     } as LTenantDetail)),
+  // Blacklist
+  landlordBlacklist: () => request<any>("GET", "/landlord/blacklist").then((d) => ({ items: rows<BlacklistEntry>(d, "items") })),
+  landlordSetBlacklist: (tenantId: string, reason: string) => request<{ ok: true }>("POST", "/landlord/blacklist", { body: { tenantId, reason } }),
+  landlordRemoveBlacklist: (tenantId: string) => request<{ ok: true }>("DELETE", `/landlord/blacklist/${tenantId}`),
 
   // admin
   adminDashboard: () =>

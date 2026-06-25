@@ -24,6 +24,7 @@ export default function LandlordTabs() {
       <Tabs.Screen name="properties" options={{ title: "Properties", tabBarIcon: tab("business") }} />
       <Tabs.Screen name="tenants" options={{ title: "Tenants", tabBarIcon: tab("people") }} />
       <Tabs.Screen name="rent" options={{ title: "Rent", tabBarIcon: tab("cash") }} />
+      <Tabs.Screen name="messages" options={{ title: "Messages", headerShown: false, tabBarIcon: tab("chatbubbles") }} />
       <Tabs.Screen name="more" options={{ title: "More", tabBarIcon: tab("ellipsis-horizontal-circle") }} />
     </Tabs>
   );
