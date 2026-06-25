@@ -3,7 +3,7 @@ import { Alert, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, H2, Muted, Body, Field, Button, Loading, ErrorText, Empty, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
-import { api, ApiError, type ReviewCriteria } from "@/lib/api";
+import { api, ApiError, type ReviewCriteria, type ReviewView } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
 const CRITERIA: { key: keyof ReviewCriteria; label: string }[] = [
@@ -14,20 +14,34 @@ const CRITERIA: { key: keyof ReviewCriteria; label: string }[] = [
   { key: "overall", label: "Overall" },
 ];
 
-function Stars({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+function Stars({ value, onChange, size = 26 }: { value: number; onChange?: (n: number) => void; size?: number }) {
   return (
-    <View style={{ flexDirection: "row", gap: 4 }}>
+    <View style={{ flexDirection: "row", gap: 3 }}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <Pressable key={n} onPress={() => onChange(n)} hitSlop={6}>
-          <Ionicons name={n <= value ? "star" : "star-outline"} size={26} color={n <= value ? "#F59E0B" : colors.subtle} />
+        <Pressable key={n} onPress={onChange ? () => onChange(n) : undefined} disabled={!onChange} hitSlop={6}>
+          <Ionicons name={n <= value ? "star" : "star-outline"} size={size} color={n <= value ? "#F59E0B" : colors.subtle} />
         </Pressable>
       ))}
     </View>
   );
 }
 
+function ReviewRow({ r, who }: { r: ReviewView; who: string }) {
+  return (
+    <Card>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Body style={{ fontWeight: "700" }}>{r.counterparty || who}</Body>
+        <Stars value={r.stars} size={16} />
+      </View>
+      {r.property ? <Muted>{r.property}</Muted> : null}
+      {r.feedback ? <Body style={{ marginTop: 4 }}>{r.feedback}</Body> : null}
+      {r.createdAt ? <Muted style={{ marginTop: 4 }}>{shortDate(r.createdAt)}</Muted> : null}
+    </Card>
+  );
+}
+
 export default function Reviews() {
-  const { data, loading, error, reload } = useAsync(() => api.pendingReviews());
+  const { data, loading, error, reload } = useAsync(() => Promise.all([api.pendingReviews(), api.tenantReviews()]));
   const [openLease, setOpenLease] = useState<string | null>(null);
   const [criteria, setCriteria] = useState<ReviewCriteria>({ propertyQuality: 5, maintenanceSupport: 5, communication: 5, transparency: 5, overall: 5 });
   const [feedback, setFeedback] = useState("");
@@ -35,7 +49,9 @@ export default function Reviews() {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <Loading />;
-  const items = data?.items ?? [];
+  const pending = data?.[0]?.items ?? [];
+  const received = data?.[1]?.received ?? [];
+  const given = data?.[1]?.given ?? [];
 
   async function submit(leaseId: string) {
     setSubmitting(true);
@@ -58,14 +74,15 @@ export default function Reviews() {
       <Muted>You can review a landlord once your lease has ended.</Muted>
       <ErrorText>{error}</ErrorText>
 
-      {items.length === 0 ? (
+      {pending.length === 0 ? (
         <Empty title="Nothing to review" subtitle="Ended leases you can rate will appear here." />
       ) : (
-        items.map((l) => (
+        pending.map((l) => (
           <Card key={l.leaseId}>
             <Body style={{ fontWeight: "700" }}>{l.property.name}</Body>
             <Muted>
-              {l.landlordName} · ended {shortDate(l.endDate)}
+              {l.landlordName}
+              {l.endDate ? ` · ended ${shortDate(l.endDate)}` : ""}
             </Muted>
 
             {openLease === l.leaseId ? (
@@ -85,11 +102,26 @@ export default function Reviews() {
                 <Button title="Cancel" variant="secondary" onPress={() => setOpenLease(null)} />
               </View>
             ) : (
-              <Button title="Rate now" variant="secondary" onPress={() => setOpenLease(l.leaseId)} />
+              <Button title={l.existingRating ? "Edit review" : "Rate now"} variant="secondary" onPress={() => setOpenLease(l.leaseId)} />
             )}
           </Card>
         ))
       )}
+
+      {received.length > 0 ? (
+        <>
+          <H2>Reviews about you</H2>
+          <Muted>What landlords have publicly shared about you.</Muted>
+          {received.map((r) => <ReviewRow key={r.id} r={r} who="A landlord" />)}
+        </>
+      ) : null}
+
+      {given.length > 0 ? (
+        <>
+          <H2>Reviews you gave</H2>
+          {given.map((r) => <ReviewRow key={r.id} r={r} who="Landlord" />)}
+        </>
+      ) : null}
     </Screen>
   );
 }

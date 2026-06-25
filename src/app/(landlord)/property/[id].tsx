@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Card, H1, H2, Muted, Body, Badge, Row, Button, Loading, ErrorText, money } from "@/components/ui";
+import * as ImagePicker from "expo-image-picker";
+import { Screen, Card, H1, H2, Muted, Body, Badge, Row, Field, Button, Loading, ErrorText, money } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
-import { api, type LPropertyDetail } from "@/lib/api";
+import { api, uploadPropertyPhoto, type LPropertyDetail } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
 import { colors, radius } from "@/lib/theme";
 
 const AVAIL_NEXT: Record<string, string> = { AVAILABLE: "OCCUPIED", OCCUPIED: "UNAVAILABLE", UNAVAILABLE: "AVAILABLE" };
+const TYPES = ["APARTMENT", "HOUSE", "ROOM", "COMMERCIAL", "OTHER"] as const;
+const FURNISH = ["UNFURNISHED", "SEMI_FURNISHED", "FURNISHED"] as const;
+const label = (s: string) => s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+const num = (s: string) => (s.trim() === "" ? undefined : Number(s.replace(/[^\d.]/g, "")));
 
 // Rebuild the full property write body (PATCH needs name/type/address/rent + the rest).
 function writeBody(p: LPropertyDetail, overrides: Record<string, unknown>) {
@@ -30,10 +35,27 @@ function writeBody(p: LPropertyDetail, overrides: Record<string, unknown>) {
   };
 }
 
+function Chips<T extends string>({ options, value, onChange }: { options: readonly T[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {options.map((o) => {
+        const active = o === value;
+        return (
+          <Pressable key={o} onPress={() => onChange(o)}
+            style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.md, borderWidth: 1.5, borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.infoBg : colors.card }}>
+            <Text style={{ fontWeight: "700", color: active ? colors.primary : colors.text, fontSize: 13 }}>{label(o)}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function PropertyDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, loading, error, refresh } = useAsync(() => api.landlordPropertyDetail(id), [id]);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   if (loading) return <Loading />;
   if (error || !data) return <Screen><ErrorText>{error || "Not found."}</ErrorText></Screen>;
@@ -44,9 +66,24 @@ export default function PropertyDetail() {
     try {
       await api.landlordUpdateProperty(id, writeBody(p, overrides));
       await refresh();
+    } catch (e: any) {
+      Alert.alert("Could not save", e?.message ?? "Try again.");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function addPhotos() {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: true, selectionLimit: 10, quality: 0.7 });
+    if (res.canceled) return;
+    setBusy(true);
+    let uploaded = 0;
+    for (const a of res.assets) {
+      try { await uploadPropertyPhoto(id, { uri: a.uri, fileName: a.fileName, mimeType: a.mimeType }); uploaded++; } catch { /* skip */ }
+    }
+    setBusy(false);
+    await refresh();
+    Alert.alert("Photos added", `${uploaded}/${res.assets.length} uploaded.`);
   }
 
   return (
@@ -76,27 +113,81 @@ export default function PropertyDetail() {
       </View>
 
       <Card>
-        <Row label="Type" value={p.type} />
+        <Row label="Type" value={label(p.type)} />
         {p.rooms != null ? <Row label="Bedrooms" value={String(p.rooms)} /> : null}
         {p.bathrooms != null ? <Row label="Bathrooms" value={String(p.bathrooms)} /> : null}
         {p.areaSqft != null ? <Row label="Area" value={`${p.areaSqft} sqft`} /> : null}
-        <Row label="Furnishing" value={String(p.furnishing).replace(/_/g, " ")} />
+        <Row label="Furnishing" value={label(String(p.furnishing))} />
         <Row label="Security deposit" value={money(p.securityDeposit)} />
       </Card>
 
       {p.description ? <Card><H2>About</H2><Body>{p.description}</Body></Card> : null}
 
-      <Card style={{ gap: 12 }}>
-        <H2>Manage</H2>
-        <Button title={`Mark ${(AVAIL_NEXT[p.availability] ?? "AVAILABLE").toLowerCase()}`} onPress={() => patch({ availability: AVAIL_NEXT[p.availability] ?? "AVAILABLE" })} loading={busy} />
-        <Button
-          title={p.listedPublic ? "Hide from public listings" : "Show on public listings"}
-          variant="secondary"
-          onPress={() => patch({ listedPublic: !p.listedPublic })}
-          loading={busy}
-        />
-        <Muted>Editing full details & photos is available on the web portal.</Muted>
-      </Card>
+      {editing ? (
+        <EditForm p={p} busy={busy} onCancel={() => setEditing(false)} onSave={async (ov) => { await patch(ov); setEditing(false); }} />
+      ) : (
+        <Card style={{ gap: 12 }}>
+          <H2>Manage</H2>
+          <Button title="Edit details" onPress={() => setEditing(true)} />
+          <Button title={`Add photos (${p.photos.length}/10)`} variant="secondary" onPress={addPhotos} loading={busy} />
+          <Button title={`Mark ${(AVAIL_NEXT[p.availability] ?? "AVAILABLE").toLowerCase()}`} variant="secondary" onPress={() => patch({ availability: AVAIL_NEXT[p.availability] ?? "AVAILABLE" })} loading={busy} />
+          <Button title={p.listedPublic ? "Hide from public listings" : "Show on public listings"} variant="secondary" onPress={() => patch({ listedPublic: !p.listedPublic })} loading={busy} />
+        </Card>
+      )}
     </Screen>
+  );
+}
+
+function EditForm({ p, busy, onSave, onCancel }: { p: LPropertyDetail; busy: boolean; onSave: (ov: Record<string, unknown>) => void; onCancel: () => void }) {
+  const [name, setName] = useState(p.name);
+  const [type, setType] = useState<(typeof TYPES)[number]>((p.type as any) ?? "APARTMENT");
+  const [address, setAddress] = useState(p.address);
+  const [rent, setRent] = useState(String(p.rentAmount ?? ""));
+  const [deposit, setDeposit] = useState(String(p.securityDeposit ?? ""));
+  const [rooms, setRooms] = useState(p.rooms != null ? String(p.rooms) : "");
+  const [bathrooms, setBathrooms] = useState(p.bathrooms != null ? String(p.bathrooms) : "");
+  const [area, setArea] = useState(p.areaSqft != null ? String(p.areaSqft) : "");
+  const [furnishing, setFurnishing] = useState<(typeof FURNISH)[number]>((p.furnishing as any) ?? "UNFURNISHED");
+  const [description, setDescription] = useState(p.description ?? "");
+  const [err, setErr] = useState("");
+
+  function save() {
+    setErr("");
+    if (name.trim().length < 2) return setErr("Enter a property name.");
+    if (address.trim().length < 3) return setErr("Enter the address.");
+    const rentAmount = num(rent);
+    if (!rentAmount || rentAmount <= 0) return setErr("Enter a valid monthly rent.");
+    onSave({
+      name: name.trim(), type, address: address.trim(), rentAmount,
+      securityDeposit: num(deposit) ?? 0, rooms: num(rooms), bathrooms: num(bathrooms),
+      areaSqft: num(area), furnishing, description: description.trim() || undefined,
+    });
+  }
+
+  return (
+    <Card style={{ gap: 12 }}>
+      <H2>Edit details</H2>
+      <Field label="Property name" value={name} onChangeText={setName} />
+      <View style={{ gap: 6 }}>
+        <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Type</Text>
+        <Chips options={TYPES} value={type} onChange={setType} />
+      </View>
+      <Field label="Address" value={address} onChangeText={setAddress} multiline />
+      <Field label="Monthly rent (₹)" value={rent} onChangeText={setRent} keyboardType="number-pad" />
+      <Field label="Security deposit (₹)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" />
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flex: 1 }}><Field label="Bedrooms" value={rooms} onChangeText={setRooms} keyboardType="number-pad" /></View>
+        <View style={{ flex: 1 }}><Field label="Bathrooms" value={bathrooms} onChangeText={setBathrooms} keyboardType="number-pad" /></View>
+      </View>
+      <Field label="Area (sq.ft)" value={area} onChangeText={setArea} keyboardType="number-pad" />
+      <View style={{ gap: 6 }}>
+        <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Furnishing</Text>
+        <Chips options={FURNISH} value={furnishing} onChange={setFurnishing} />
+      </View>
+      <Field label="Description" value={description} onChangeText={setDescription} multiline />
+      <ErrorText>{err}</ErrorText>
+      <Button title="Save changes" onPress={save} loading={busy} />
+      <Button title="Cancel" variant="secondary" onPress={onCancel} />
+    </Card>
   );
 }

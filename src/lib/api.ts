@@ -160,7 +160,8 @@ export type Complaint = { id: string; subject: string; status: string; createdAt
 export type ComplaintDetail = Complaint & { description: string; updatedAt: string; property: { id: string; name: string } | null; messages: { id: string; body: string; authorId: string; mine: boolean; createdAt: string }[] };
 export type Notification = { id: string; type: string; title: string; body: string | null; link: string | null; read: boolean; createdAt: string };
 export type Listing = { id: string; ref: string | null; name: string; address: string; city: string; type: string; rent: number; securityDeposit: number; rooms: number | null; bathrooms: number | null; areaSqft: number | null; furnishing: string; amenities: string[]; available: boolean; verified: boolean; listedAt: string; photo: string | null };
-export type ListingDetail = Omit<Listing, "city" | "photo" | "listedAt"> & { description: string | null; maintenanceMonthly: number | null; balconies: number | null; floor: number | null; totalFloors: number | null; carpetAreaSqft: number | null; facing: string | null; bachelorsAllowed: boolean; projectName: string | null; parkingSpots: number | null; listedBy: string; hasLobby: boolean; hasParking: boolean; hasLift: boolean; powerBackup: boolean; availability: string; photos: string[]; landlord: { name: string; verified: boolean } };
+export type PublicReview = { id: string; stars: number; feedback: string | null; createdAt: string; by: string };
+export type ListingDetail = Omit<Listing, "city" | "photo" | "listedAt"> & { description: string | null; maintenanceMonthly: number | null; balconies: number | null; floor: number | null; totalFloors: number | null; carpetAreaSqft: number | null; facing: string | null; bachelorsAllowed: boolean; projectName: string | null; parkingSpots: number | null; listedBy: string; hasLobby: boolean; hasParking: boolean; hasLift: boolean; powerBackup: boolean; availability: string; photos: string[]; landlord: { name: string; verified: boolean; rating: number | null; ratingCount: number }; reviews: PublicReview[] };
 export type Enquiry = { token: string; createdAt: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean; createdAt: string } | null; property: { id: string; ref: string | null; name: string; address: string; photo: string | null } };
 export type TenantProfile = Me & { governmentId: string | null; emergencyContact: string | null; documents: { id: string; type: string; fileName: string | null; label: string | null; url: string; createdAt: string }[] };
 export type PendingReview = { leaseId: string; endDate: string; status: string; property: { name: string; address: string }; landlordName: string };
@@ -187,6 +188,14 @@ export type LComplaint = { id: string; subject: string; status: string; createdA
 export type LInquiry = { id: string; token: string; guestName: string; guestPhone: string; property: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean } | null };
 export type LPendingReview = { leaseId: string; endDate: string; property: string; tenant: string };
 export type TenantCriteria = { rentDiscipline: number; propertyMaintenance: number; communication: number; ruleCompliance: number; conduct: number };
+// A normalized rating row for the in-app "reviews I gave / received" lists.
+export type ReviewView = { id: string; stars: number; feedback: string | null; recommend: boolean; createdAt: string; counterparty: string; property: string };
+export type ReviewBundle = { given: ReviewView[]; received: ReviewView[] };
+// Full tenant detail a landlord can open from the tenants list.
+export type LTenantDetail = {
+  tenant: { id: string; fullName: string; email: string; phone: string | null; verified: boolean; governmentId: string | null; emergencyContact: string | null; avatarUrl: string | null } | null;
+  leases: { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: { id: string; name: string } | null }[];
+};
 // A rental application = a prospective tenant requesting a property. The landlord
 // approves/rejects (mirrors the website's /landlord/applications flow).
 export type LApplication = { id: string; fullName: string; email: string; phone: string | null; message: string | null; status: string; createdAt: string; property: string };
@@ -232,6 +241,17 @@ function unwrap<T = any>(d: any, ...keys: string[]): T {
 // screens render them as strings. Flatten to a name so React never gets an object.
 const pName = (p: any): string => (typeof p === "string" ? p : p?.name ?? "");
 const tName = (t: any): string => (typeof t === "string" ? t : t?.fullName ?? t?.name ?? "");
+// Flatten a backend rating row (rater/ratee objects, lease.property.name) into a
+// flat ReviewView. `who` is the side that is the *other* party for this list.
+const mapReview = (r: any, who: "rater" | "ratee") => ({
+  id: r.id,
+  stars: r.stars ?? 0,
+  feedback: r.feedback ?? null,
+  recommend: !!r.recommend,
+  createdAt: r.createdAt ?? "",
+  counterparty: tName(r[who]),
+  property: r.lease?.property?.name ?? pName(r.property) ?? "",
+});
 
 // ---- API surface -----------------------------------------------------------
 export const api = {
@@ -297,9 +317,26 @@ export const api = {
     }),
   updateTenantProfile: (b: Partial<{ fullName: string; phone: string; emergencyContact: string; avatarUrl: string }>) =>
     request<{ ok: true }>("PATCH", "/tenant/profile", { body: b }),
-  pendingReviews: () => request<any>("GET", "/tenant/reviews/pending").then((d) => ({ items: rows<PendingReview>(d, "items", "leases") })),
+  // Live sends property/landlord as objects + no flat landlordName; normalize.
+  pendingReviews: () =>
+    request<any>("GET", "/tenant/reviews/pending").then((d) => ({
+      items: rows<any>(d, "items", "leases").map((l) => ({
+        leaseId: l.leaseId ?? l.id,
+        endDate: l.endDate ?? "",
+        status: l.status ?? "",
+        property: { name: l.property?.name ?? pName(l.property), address: l.property?.address ?? "" },
+        landlordName: l.landlordName ?? l.landlord?.fullName ?? l.landlord?.name ?? "",
+        existingRating: l.existingRating ?? null,
+      })) as (PendingReview & { existingRating: unknown })[],
+    })),
   submitReview: (b: { leaseId: string; stars: number; criteria: ReviewCriteria; feedback?: string; recommend?: boolean }) =>
     request<{ ok: true }>("POST", "/tenant/reviews", { body: b }),
+  // Reviews the tenant gave + received (received = public, status VISIBLE).
+  tenantReviews: () =>
+    request<any>("GET", "/tenant/reviews").then((d) => ({
+      given: (Array.isArray(d?.given) ? d.given : []).map((r: any) => mapReview(r, "ratee")),
+      received: (Array.isArray(d?.received) ? d.received : []).map((r: any) => mapReview(r, "rater")),
+    } as ReviewBundle)),
 
   // shared
   notifications: () =>
@@ -312,7 +349,15 @@ export const api = {
   listingDetail: (idOrRef: string) =>
     request<any>("GET", `/listings/${idOrRef}`, { auth: false }).then((d) => {
       const x = unwrap<any>(d, "listing", "property");
-      return { ...x, photos: Array.isArray(x.photos) ? x.photos : [], amenities: Array.isArray(x.amenities) ? x.amenities : [] } as ListingDetail;
+      const l = x.landlord ?? {};
+      return {
+        ...x,
+        photos: Array.isArray(x.photos) ? x.photos : [],
+        amenities: Array.isArray(x.amenities) ? x.amenities : [],
+        // Live sends landlord.fullName; the screen reads landlord.name.
+        landlord: { name: l.name ?? l.fullName ?? "", verified: !!l.verified, rating: l.rating ?? null, ratingCount: l.ratingCount ?? 0 },
+        reviews: Array.isArray(x.reviews) ? x.reviews : [],
+      } as ListingDetail;
     }),
   enquiries: () => request<any>("GET", "/account/enquiries").then((d) => ({ items: rows<Enquiry>(d, "items", "inquiries", "enquiries") })),
   updateAccount: (b: Partial<{ fullName: string; phone: string; avatarUrl: string }>) =>
@@ -409,8 +454,30 @@ export const api = {
   bookVisit: (propertyId: string, preferredAt: string, message?: string) =>
     request<{ ok: true; id: string }>("POST", "/account/visits", { body: { propertyId, preferredAt, message } }),
   myVisits: () => request<any>("GET", "/account/visits").then((d) => ({ items: rows<any>(d, "items", "visits") })),
-  landlordPendingReviews: () => request<any>("GET", "/landlord/reviews/pending").then((d) => ({ items: rows<LPendingReview>(d, "items", "leases", "pending") })),
+  // Live sends tenant/property as objects; flatten to strings for the screen.
+  landlordPendingReviews: () =>
+    request<any>("GET", "/landlord/reviews/pending").then((d) => ({
+      items: rows<any>(d, "items", "leases", "pending").map((l) => ({
+        leaseId: l.leaseId ?? l.id,
+        endDate: l.endDate ?? "",
+        property: pName(l.property),
+        tenant: tName(l.tenant),
+        existingRating: l.existingRating ?? null,
+      })) as (LPendingReview & { existingRating: unknown })[],
+    })),
   landlordRateTenant: (b: { leaseId: string; stars: number; criteria: TenantCriteria; feedback?: string; recommend?: boolean }) => request<{ ok: true }>("POST", "/landlord/reviews", { body: b }),
+  // Reviews the landlord gave + received (received = public, status VISIBLE).
+  landlordReviews: () =>
+    request<any>("GET", "/landlord/reviews").then((d) => ({
+      given: (Array.isArray(d?.given) ? d.given : []).map((r: any) => mapReview(r, "ratee")),
+      received: (Array.isArray(d?.received) ? d.received : []).map((r: any) => mapReview(r, "rater")),
+    } as ReviewBundle)),
+  // Full tenant detail (profile + leases) — landlord taps a tenant in the list.
+  landlordTenant: (id: string) =>
+    request<any>("GET", `/landlord/tenants/${id}`).then((d) => ({
+      tenant: d.tenant ?? null,
+      leases: rows<any>(d, "leases").map((l) => ({ ...l, monthlyRent: Number(l.monthlyRent ?? 0), property: l.property ?? null })),
+    } as LTenantDetail)),
 
   // admin
   adminDashboard: () =>

@@ -86,7 +86,7 @@ export default function LandlordHome() {
         { icon: "person-add-outline", label: "Tenant requests", onPress: () => router.push("/(landlord)/applications") },
         { icon: "calendar-outline", label: "Visit requests", onPress: () => router.push("/(landlord)/visits") },
         { icon: "document-text-outline", label: "Leases", onPress: () => router.push("/(landlord)/leases") },
-        { icon: "star-outline", label: "Rate tenants", onPress: () => router.push("/(landlord)/reviews") },
+        { icon: "star-outline", label: "Reviews", onPress: () => router.push("/(landlord)/reviews") },
         { icon: "notifications-outline", label: "Notifications", onPress: () => router.push("/(tenant)/notifications") },
       ]} />
     </View>

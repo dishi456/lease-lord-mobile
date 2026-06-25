@@ -66,6 +66,39 @@ export default function PublicListing() {
       ) : null}
 
       <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <H2>Listed by</H2>
+          {data.landlord.rating != null ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Ionicons name="star" size={15} color="#F59E0B" />
+              <Body style={{ fontWeight: "700" }}>{data.landlord.rating.toFixed(1)}</Body>
+              <Muted>({data.landlord.ratingCount})</Muted>
+            </View>
+          ) : null}
+        </View>
+        <Body>{data.landlord.name}</Body>
+      </Card>
+
+      {data.reviews.length > 0 ? (
+        <Card>
+          <H2>Tenant reviews</H2>
+          {data.reviews.map((r) => (
+            <View key={r.id} style={{ gap: 2, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 6 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Body style={{ fontWeight: "700" }}>{r.by}</Body>
+                <View style={{ flexDirection: "row", gap: 2 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Ionicons key={n} name={n <= r.stars ? "star" : "star-outline"} size={13} color={n <= r.stars ? "#F59E0B" : colors.subtle} />
+                  ))}
+                </View>
+              </View>
+              {r.feedback ? <Body>{r.feedback}</Body> : null}
+            </View>
+          ))}
+        </Card>
+      ) : null}
+
+      <Card>
         <H2>Interested?</H2>
         <Muted>Create a free account to enquire and chat with the owner.</Muted>
         <Button title="Sign in / Create account" onPress={() => router.push("/(auth)/register")} />

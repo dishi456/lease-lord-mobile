@@ -13,7 +13,7 @@ const ITEMS: Item[] = [
   { icon: "construct", label: "Maintenance", href: "/(landlord)/maintenance" },
   { icon: "chatbubbles", label: "Complaints", href: "/(landlord)/complaints" },
   { icon: "mail", label: "Enquiries", href: "/(landlord)/inquiries" },
-  { icon: "star", label: "Rate tenants", href: "/(landlord)/reviews" },
+  { icon: "star", label: "Reviews", href: "/(landlord)/reviews" },
   { icon: "notifications", label: "Notifications", href: "/(tenant)/notifications" },
 ];
 
