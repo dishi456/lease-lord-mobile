@@ -95,6 +95,8 @@ export const uploadTenantDocument = (label: string, asset: { uri: string; fileNa
   uploadFile("profile-id", label, asset);
 export const uploadMarketplacePhoto = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
   uploadFile("marketplace-photo", "me", asset);
+export const uploadPaymentProof = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("payment-proof", "me", asset);
 
 type Opts = { auth?: boolean; body?: unknown; query?: Record<string, string | number | undefined> };
 
@@ -168,7 +170,7 @@ export type Lease = {
   landlord: { name: string; phone: string | null };
 };
 export type Invoice = { id: string; periodMonth: string; amount: number; dueDate: string; status: string };
-export type Payment = { id: string; amount: number; method: string; status: string; paidAt: string | null; receiptUrl: string | null; createdAt: string; invoiceId: string; periodMonth: string };
+export type Payment = { id: string; amount: number; method: string; status: string; paidAt: string | null; receiptUrl: string | null; receiptNumber: string | null; reference: string | null; proofUrl: string | null; createdAt: string; invoiceId: string; periodMonth: string | null; property: string | null };
 export type Maintenance = { id: string; title: string; status: string; priority: string; images: string[]; createdAt: string };
 export type MaintenanceDetail = Maintenance & { description: string; assignedTo: string | null; updatedAt: string; property: { id: string; name: string; address: string } };
 export type Complaint = { id: string; subject: string; status: string; createdAt: string };
@@ -221,7 +223,7 @@ export type LLeaseDetail = {
   tenant: { id: string; fullName: string; email: string; phone: string | null } | null;
   invoices: { id: string; periodMonth: string; amount: number; dueDate: string; status: string }[];
 };
-export type LInvoice = { id: string; periodMonth: string; amount: number; dueDate: string; status: string; property: string; tenant: string };
+export type LInvoice = { id: string; periodMonth: string; amount: number; amountPaid: number; balance: number; dueDate: string; status: string; property: string; tenant: string };
 export type LMaintenance = { id: string; title: string; status: string; priority: string; assignedTo: string | null; images: string[]; createdAt: string; property: string; tenant: string };
 export type LComplaint = { id: string; subject: string; status: string; createdAt: string; property: string | null; tenant: string };
 export type LInquiry = { id: string; token: string; guestName: string; guestPhone: string; property: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean } | null };
@@ -458,6 +460,8 @@ export const api = {
     })),
   // Recording a manual rent payment: live uses POST /landlord/rent/record.
   landlordPayInvoice: (id: string, method: string) => request<{ ok: true }>("POST", "/landlord/rent/record", { body: { invoiceId: id, method } }),
+  landlordRecordPayment: (b: { invoiceId: string; amount?: number; method: string; reference?: string; notes?: string; proofUrl?: string }) =>
+    request<{ ok: true; paymentId: string; receiptNumber: string; status: string; balance: number }>("POST", "/landlord/rent/record", { body: b }),
   landlordRemindInvoice: (id: string) => request<{ ok: true }>("POST", "/landlord/rent/remind", { body: { invoiceId: id } }),
   landlordMaintenance: (status?: string) => request<any>("GET", "/landlord/maintenance", { query: { status } }).then((d) => ({ items: rows<any>(d, "items", "requests").map((m) => ({ ...m, property: pName(m.property), tenant: tName(m.tenant) })) as LMaintenance[] })),
   // Live updates a request via PATCH /landlord/maintenance/{id}.
