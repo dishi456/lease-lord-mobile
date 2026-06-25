@@ -7,6 +7,7 @@ import { colors } from "@/lib/theme";
 
 type Item = { icon: keyof typeof Ionicons.glyphMap; label: string; href: string };
 const ITEMS: Item[] = [
+  { icon: "chatbubbles", label: "Messages", href: "/(tenant)/chat" },
   { icon: "person", label: "Profile", href: "/(tenant)/profile" },
   { icon: "time", label: "Rental history", href: "/(tenant)/rental-history" },
   { icon: "document-attach", label: "Documents", href: "/(tenant)/documents" },

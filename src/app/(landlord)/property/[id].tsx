@@ -7,6 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Screen, Card, H1, H2, Muted, Body, Badge, Row, Field, Button, Loading, ErrorText, money } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api, uploadPropertyPhoto, type LPropertyDetail } from "@/lib/api";
+import { detailLabel } from "@/lib/property-forms";
 import { fileUrl } from "@/lib/config";
 import { colors, radius } from "@/lib/theme";
 
@@ -120,6 +121,27 @@ export default function PropertyDetail() {
         <Row label="Furnishing" value={label(String(p.furnishing))} />
         <Row label="Security deposit" value={money(p.securityDeposit)} />
       </Card>
+
+      {(() => {
+        const details = (p as any).details as Record<string, unknown> | null | undefined;
+        const entries = details ? Object.entries(details).filter(([, v]) => v !== "" && v != null && v !== false) : [];
+        return entries.length > 0 ? (
+          <Card>
+            <H2>{label(p.type)} details</H2>
+            {entries.map(([k, v]) => <Row key={k} label={detailLabel(k)} value={typeof v === "boolean" ? "Yes" : String(v)} />)}
+          </Card>
+        ) : null;
+      })()}
+
+      {(p as any).city || (p as any).state || (p as any).country ? (
+        <Card>
+          <H2>Location</H2>
+          {(p as any).city ? <Row label="City" value={String((p as any).city)} /> : null}
+          {(p as any).state ? <Row label="State" value={String((p as any).state)} /> : null}
+          {(p as any).country ? <Row label="Country" value={String((p as any).country)} /> : null}
+          {(p as any).postalCode ? <Row label="Postal code" value={String((p as any).postalCode)} /> : null}
+        </Card>
+      ) : null}
 
       {p.description ? <Card><H2>About</H2><Body>{p.description}</Body></Card> : null}
 

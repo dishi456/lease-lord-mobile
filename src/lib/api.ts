@@ -97,6 +97,8 @@ export const uploadMarketplacePhoto = (asset: { uri: string; fileName?: string |
   uploadFile("marketplace-photo", "me", asset);
 export const uploadPaymentProof = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
   uploadFile("payment-proof", "me", asset);
+export const uploadChatAttachment = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("chat-attachment", "me", asset);
 
 type Opts = { auth?: boolean; body?: unknown; query?: Record<string, string | number | undefined> };
 
@@ -243,9 +245,11 @@ export type LApplication = { id: string; fullName: string; email: string; phone:
 // A property visit (tour) request a prospective tenant booked.
 export type LVisit = { id: string; fullName: string; email: string; phone: string | null; message: string | null; status: string; preferredAt: string | null; createdAt: string; property: string };
 export type NewProperty = {
-  name: string; type: "APARTMENT" | "HOUSE" | "ROOM" | "COMMERCIAL" | "OTHER"; address: string;
+  name: string; type: "APARTMENT" | "HOUSE" | "ROOM" | "COMMERCIAL" | "LAND" | "STUDENT_HOUSING" | "OTHER"; address: string;
   rentAmount: number; securityDeposit?: number; rooms?: number; bathrooms?: number; areaSqft?: number;
   furnishing?: "UNFURNISHED" | "SEMI_FURNISHED" | "FURNISHED"; description?: string;
+  country?: string; state?: string; city?: string; postalCode?: string; latitude?: number; longitude?: number;
+  details?: Record<string, string | number | boolean | null>;
 };
 
 // ---- Admin shapes ----------------------------------------------------------
@@ -261,6 +265,11 @@ export type AuditEntry = { id: string; action: string; entity: string; entityId:
 export type AdminLease = { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: string; landlord: string; tenant: string };
 export type AdminMaintenance = { id: string; title: string; priority: string; status: string; images: string[]; property: string; landlord: string; tenant: string; createdAt: string };
 export type InquiryMsg = { id: string; fromGuest: boolean; body: string; createdAt: string };
+// ---- Property chat (per-lease) ----
+export type ChatParty = { id: string; name: string; avatarUrl: string | null; lastSeenAt: string | null };
+export type ChatConversation = { leaseId: string; leaseNumber: string; leaseStatus: string; rent: number; property: { id: string; name: string; photo: string | null }; other: ChatParty; lastMessage: { body: string | null; attachmentType: string | null; createdAt: string; mine: boolean } | null; unread: number };
+export type ChatMessage = { id: string; body: string | null; attachmentUrl: string | null; attachmentType: string | null; starred: boolean; readAt: string | null; createdAt: string; senderId: string; mine: boolean };
+export type ChatHeader = { leaseId: string; leaseNumber: string; leaseStatus: string; rent: number; property: { id: string; name: string; photo: string | null }; tenantName: string; landlordName: string; other: ChatParty; signedContractUrl: string | null };
 
 // ---- Live-backend normalization -------------------------------------------
 // The live prebuildapps.com backend wraps lists in per-resource envelopes
@@ -650,4 +659,9 @@ export const api = {
   marketplaceUpdate: (id: string, b: Partial<NewListing & { status: string }>) => request<{ ok: true }>("PATCH", `/marketplace/listings/${id}`, { body: b }),
   marketplaceDelete: (id: string) => request<{ ok: true }>("DELETE", `/marketplace/listings/${id}`),
   marketplaceFavorite: (id: string, on: boolean) => request<{ ok: true; favorited: boolean }>(on ? "POST" : "DELETE", `/marketplace/favorites/${id}`),
+
+  // property chat (per-lease)
+  chatConversations: () => request<any>("GET", "/chat/conversations").then((d) => ({ items: rows<ChatConversation>(d, "conversations", "items"), totalUnread: d.totalUnread ?? 0 })),
+  chatThread: (leaseId: string) => request<any>("GET", `/chat/${leaseId}`).then((d) => ({ conversation: d.conversation as ChatHeader, messages: rows<ChatMessage>(d, "messages") })),
+  chatSend: (leaseId: string, b: { body?: string; attachmentUrl?: string; attachmentType?: string }) => request<{ ok: true; message: ChatMessage }>("POST", `/chat/${leaseId}`, { body: b }),
 };
