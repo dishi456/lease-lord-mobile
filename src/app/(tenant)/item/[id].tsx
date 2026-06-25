@@ -89,7 +89,7 @@ export default function ListingDetail() {
       {l.mine ? (
         <Card style={{ gap: 12 }}>
           <H2>Manage</H2>
-          <Button title="Edit listing" onPress={() => router.push(`/(tenant)/marketplace/new?id=${id}`)} />
+          <Button title="Edit listing" onPress={() => router.push(`/(tenant)/sell?id=${id}`)} />
           {l.status === "AVAILABLE"
             ? <Button title="Mark as sold" variant="secondary" onPress={() => setStatus("SOLD")} loading={busy} />
             : <Button title="Mark as available" variant="secondary" onPress={() => setStatus("AVAILABLE")} loading={busy} />}

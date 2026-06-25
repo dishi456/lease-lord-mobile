@@ -74,7 +74,7 @@ export default function Marketplace() {
             />
             {search ? <Pressable onPress={() => { setSearch(""); setQ(""); }} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.subtle} /></Pressable> : null}
           </View>
-          <Pressable onPress={() => router.push("/(tenant)/marketplace/new")} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: 14 }}>
+          <Pressable onPress={() => router.push("/(tenant)/sell")} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: 14 }}>
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={{ color: "#fff", fontWeight: "700" }}>Sell</Text>
           </Pressable>
@@ -109,7 +109,7 @@ export default function Marketplace() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
             showsVerticalScrollIndicator={false}
           >
-            {items.map((l) => <ListingCard key={l.id} l={l} onFav={() => toggleFav(l)} onOpen={() => router.push(`/(tenant)/marketplace/${l.id}`)} />)}
+            {items.map((l) => <ListingCard key={l.id} l={l} onFav={() => toggleFav(l)} onOpen={() => router.push(`/(tenant)/item/${l.id}`)} />)}
           </ScrollView>
         )}
       </View>
