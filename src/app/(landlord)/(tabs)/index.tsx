@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { authedImageUri } from "@/lib/openFile";
 import { GradientHeader, HeaderIcon } from "@/components/header";
 import { AccountMenu } from "@/components/AccountMenu";
 import { StatGrid } from "@/components/stats";
@@ -35,6 +37,7 @@ export default function LandlordHome() {
 
   if (loading) return <Loading />;
   const initial = (user?.fullName ?? "L").charAt(0).toUpperCase();
+  const avatar = authedImageUri(user?.avatarUrl);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -47,7 +50,9 @@ export default function LandlordHome() {
           <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
             <HeaderIcon name="mail" badge={data?.unreadInquiries} onPress={() => router.push("/(landlord)/inquiries")} />
             <Pressable onPress={() => setMenuOpen(true)} hitSlop={6}>
-              <View style={s.avatar}><Text style={s.avatarText}>{initial}</Text></View>
+              <View style={s.avatar}>
+                {avatar ? <Image source={{ uri: avatar }} style={{ width: 40, height: 40 }} contentFit="cover" /> : <Text style={s.avatarText}>{initial}</Text>}
+              </View>
             </Pressable>
           </View>
         </View>
@@ -87,6 +92,7 @@ export default function LandlordHome() {
       </ScrollView>
 
       <AccountMenu visible={menuOpen} onClose={() => setMenuOpen(false)} items={[
+        { icon: "person-circle-outline", label: "My profile", onPress: () => router.push("/(landlord)/profile") },
         { icon: "person-add-outline", label: "Tenant requests", onPress: () => router.push("/(landlord)/applications") },
         { icon: "calendar-outline", label: "Visit requests", onPress: () => router.push("/(landlord)/visits") },
         { icon: "document-text-outline", label: "Leases", onPress: () => router.push("/(landlord)/leases") },
@@ -101,7 +107,7 @@ const s = StyleSheet.create({
   headRow: { flexDirection: "row", alignItems: "center", paddingTop: 4 },
   greet: { color: "#DBEAFE", fontSize: 14 },
   name: { color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 2 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarText: { color: "#fff", fontSize: 16, fontWeight: "800" },
   collectCard: { backgroundColor: "#fff", borderRadius: 18, padding: 18, borderWidth: 1, borderColor: colors.border },
   collectLabel: { fontSize: 13, color: colors.muted, fontWeight: "600" },

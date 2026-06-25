@@ -252,6 +252,13 @@ export type NewProperty = {
   details?: Record<string, string | number | boolean | null>;
 };
 
+export type LandlordProfile = {
+  id: string; fullName: string; email: string; phone: string | null; avatarUrl: string | null;
+  username: string | null; verified: boolean; status: string;
+  verificationStatus: "VERIFIED" | "PENDING" | "NOT_VERIFIED"; completion: number;
+  stats: { properties: number; tenants: number; rating: number | null; ratingCount: number };
+};
+
 // ---- Admin shapes ----------------------------------------------------------
 export type AdminDashboard = {
   landlords: number; tenants: number; users: number; properties: number; occupied: number; vacant: number; activeLeases: number;
@@ -554,6 +561,9 @@ export const api = {
       received: (Array.isArray(d?.received) ? d.received : []).map((r: any) => mapReview(r, "rater")),
     } as ReviewBundle)),
   // Full tenant detail (profile + leases) — landlord taps a tenant in the list.
+  landlordProfile: () => request<any>("GET", "/landlord/profile").then((d) => d.profile as LandlordProfile),
+  updateLandlordProfile: (b: Partial<{ fullName: string; username: string; phone: string; avatarUrl: string }>) =>
+    request<{ ok: true; profile?: any }>("PATCH", "/landlord/profile", { body: b }),
   landlordTenant: (id: string) =>
     request<any>("GET", `/landlord/tenants/${id}`).then((d) => ({
       tenant: d.tenant ?? null,
