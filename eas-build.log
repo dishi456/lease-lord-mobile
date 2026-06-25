@@ -2,11 +2,47 @@ Resolved "preview" environment for the build. Learn more: https://docs.expo.dev/
 No environment variables with visibility "Plain text" and "Sensitive" found for the "preview" environment on EAS.
 Environment variables loaded from the "preview" build profile "env" configuration: EXPO_PUBLIC_API_URL.
 
-- Incrementing versionCode from 6 to 7.
-✔ Incremented versionCode from 6 to 7.
+- Incrementing versionCode from 7 to 8.
+✔ Incremented versionCode from 7 to 8.
 
 
 ✔ Using remote Android credentials (Expo server)
 ✔ Using Keystore from configuration: Build Credentials dMUXeHBBPR (default)
 
 Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+- Compressing project files
+- Uploading to EAS Build (0 / 1.4 MB)
+✔ Uploaded to EAS 2s
+- Computing project fingerprint
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/diship083/projects/lease-lord-mobile/builds/c560d9a6-0faf-4f42-b28a-7e4ee4353765
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+- Waiting for build to complete.
+✔ Build finished
+
+  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+  █ ▄▄▄▄▄ █▄ ▀█▄ ██▄ ▀▀▀█ █▄ ▀█▄█ ▄▄▄▄▄ █
+  █ █   █ ██  ▄█ ▀█▀▀▀▄  ██▀ ▀▄▄█ █   █ █
+  █ █▄▄▄█ ██▄▄▀▄▀██ █▄▄███▀█▄██▄█ █▄▄▄█ █
+  █▄▄▄▄▄▄▄█ █ ▀ ▀ █ █▄▀▄█▄▀ ▀ █▄█▄▄▄▄▄▄▄█
+  █▄▄█▄▄▀▄█▀  ▀▀▀▀ ▀▄▀▀█▀▀▀███▀▄█▄▀▀██▀▄█
+  █▄▄▀▄█ ▄▄▀▄▄ ██▀▄▄▀▄███▄ ▀▄ ▄▀▄▄▄▄▄ ▄▄█
+  █▄█▄█▄█▄ ▀█▀ ▀▀▀▀▄█▄█▄█▀ ▄█ ▀ █▄▄▀ ▀ ▄█
+  ██▄▀  █▄█▀█▀▀▀█▀ ▄██▄▄█ ███▄ ▀▀▄▀▄█▀▄ █
+  █▄ ▀ ▀ ▄▄ ▄▀▄▀▄  █▀▄▀▀█ ▄▄▄▀ ▄▀▄██ ▄▄▄█
+  ██▀▀█ ▀▄▄▄ ▄▄▄▀ ▄██▀▄ ▄█▄▄  ▄█▀█▄▀▀██ █
+  ███ ▀▄ ▄▄▀██▀▀▀█ ▄▄▄ █▀  ▄█▄▀▄ ▄▀  ▀ ▄█
+  █ ██  ▄▄██▄  ██▄ █  ▀▀▄▄▄█▄▄▄██  ▄▀▀▀ █
+  █ ▀██▀▀▄█ █  ▄▀▀  █▀█ ▀█▀ █▀  █▄▄▀█▀▀▄█
+  █ ▄ ▀▄▄▄▀▀▄▀██▄█▄ █▀▄▄▄█▀▀█▄ █▄█ ▀  ▄ █
+  █▄█▄██▄▄█▀▀ ▄▄ ▄  █▄▀ ▀ ▄█ ██ ▄▄▄ █  ██
+  █ ▄▄▄▄▄ ██ █▄▄ █▄▀▄▄ ▄█▀▄▄▀ █ █▄█  ▄█▄█
+  █ █   █ █   ▀▀██▀ ▄▀▀██▀▀██  ▄  ▄▄ ████
+  █ █▄▄▄█ █▀   █▄▀ █ ▄███▀▄▀█▀ ██▀▄ █ ▀ █
+  █▄▄▄▄▄▄▄█▄▄█▄▄██▄██▄█▄██▄▄███▄▄▄██▄██▄█
+
+
+🤖 Open this link on your Android devices (or scan the QR code) to install the app:
+https://expo.dev/accounts/diship083/projects/lease-lord-mobile/builds/c560d9a6-0faf-4f42-b28a-7e4ee4353765

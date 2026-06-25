@@ -45,18 +45,19 @@ export class ApiError extends Error {
   }
 }
 
-// Multipart upload to the shared /api/upload endpoint (Bearer-authed). Used to
-// attach property photos (purpose "property-photo", refId = propertyId).
-export async function uploadPropertyPhoto(
-  propertyId: string,
+// Multipart upload to the shared /api/upload endpoint (Bearer-authed). `purpose`
+// + `refId` tell the server what the file is (property photo, lease contract…).
+export async function uploadFile(
+  purpose: string,
+  refId: string,
   asset: { uri: string; fileName?: string | null; mimeType?: string | null },
 ): Promise<{ id: string; url: string }> {
   const form = new FormData();
-  const name = asset.fileName || `photo-${Date.now()}.jpg`;
+  const name = asset.fileName || `upload-${Date.now()}.jpg`;
   // React Native FormData file shape.
   form.append("file", { uri: asset.uri, name, type: asset.mimeType || "image/jpeg" } as any);
-  form.append("purpose", "property-photo");
-  form.append("refId", propertyId);
+  form.append("purpose", purpose);
+  form.append("refId", refId);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30000);
   let res: Response;
@@ -81,6 +82,12 @@ export async function uploadPropertyPhoto(
   }
   return data as { id: string; url: string };
 }
+
+// Convenience wrappers for the two things the app uploads.
+export const uploadPropertyPhoto = (propertyId: string, asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("property-photo", propertyId, asset);
+export const uploadLeaseContract = (leaseId: string, asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("lease-contract", leaseId, asset);
 
 type Opts = { auth?: boolean; body?: unknown; query?: Record<string, string | number | undefined> };
 
@@ -182,6 +189,13 @@ export type LPropertyDetail = {
 };
 export type LTenant = { id: string; fullName: string; email: string; phone: string | null; status: string; verified: boolean; property: string | null };
 export type LLease = { id: string; status: string; monthlyRent: number; startDate: string; endDate: string; property: string; tenant: string };
+export type LLeaseDetail = {
+  id: string; status: string; monthlyRent: number; securityDeposit: number; maintenanceFee: number | null;
+  startDate: string; endDate: string; terms: string | null; signedContractUrl: string | null; noticePeriodDays: number;
+  property: { id: string; name: string; address: string } | null;
+  tenant: { id: string; fullName: string; email: string; phone: string | null } | null;
+  invoices: { id: string; periodMonth: string; amount: number; dueDate: string; status: string }[];
+};
 export type LInvoice = { id: string; periodMonth: string; amount: number; dueDate: string; status: string; property: string; tenant: string };
 export type LMaintenance = { id: string; title: string; status: string; priority: string; assignedTo: string | null; images: string[]; createdAt: string; property: string; tenant: string };
 export type LComplaint = { id: string; subject: string; status: string; createdAt: string; property: string | null; tenant: string };
@@ -390,6 +404,11 @@ export const api = {
   // Create a lease for a managed tenant on one of the landlord's properties.
   landlordCreateLease: (b: { tenantId: string; propertyId: string; monthlyRent: number; securityDeposit?: number; maintenanceFee?: number; startDate: string; endDate: string; noticePeriodDays?: number; terms?: string }) =>
     request<{ ok: true; id: string }>("POST", "/landlord/leases", { body: b }),
+  landlordLeaseDetail: (id: string) =>
+    request<any>("GET", `/landlord/leases/${id}`).then((d) => {
+      const l = unwrap<any>(d, "lease");
+      return { ...l, property: l.property ?? null, tenant: l.tenant ?? null, invoices: Array.isArray(l.invoices) ? l.invoices : [] } as LLeaseDetail;
+    }),
   // Live exposes rent collection at `/landlord/rent` → `{ invoices }` (no kpis).
   landlordInvoices: () =>
     request<any>("GET", "/landlord/rent").then((d) => ({

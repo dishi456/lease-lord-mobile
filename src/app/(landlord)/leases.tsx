@@ -1,6 +1,8 @@
-import { RefreshControl, View } from "react-native";
+import { Pressable, RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
+import { colors } from "@/lib/theme";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 
@@ -18,16 +20,19 @@ export default function Leases() {
         <Empty title="No leases" subtitle="Tap “New lease” to create one." />
       ) : (
         items.map((l) => (
-          <Card key={l.id}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
-                <Body style={{ fontWeight: "700" }}>{l.property}</Body>
-                <Muted>{l.tenant} · {money(l.monthlyRent)}/mo</Muted>
-                <Muted style={{ fontSize: 11 }}>{shortDate(l.startDate)} → {shortDate(l.endDate)}</Muted>
+          <Pressable key={l.id} onPress={() => router.push(`/(landlord)/lease/${l.id}`)}>
+            <Card>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Body style={{ fontWeight: "700" }}>{l.property}</Body>
+                  <Muted>{l.tenant} · {money(l.monthlyRent)}/mo</Muted>
+                  <Muted style={{ fontSize: 11 }}>{shortDate(l.startDate)} → {shortDate(l.endDate)}</Muted>
+                </View>
+                <Badge label={l.status} />
+                <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
               </View>
-              <Badge label={l.status} />
-            </View>
-          </Card>
+            </Card>
+          </Pressable>
         ))
       )}
     </Screen>
