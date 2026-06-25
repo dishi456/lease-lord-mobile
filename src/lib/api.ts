@@ -93,6 +93,8 @@ export const uploadAvatar = (asset: { uri: string; fileName?: string | null; mim
   uploadFile("avatar", "me", asset);
 export const uploadTenantDocument = (label: string, asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
   uploadFile("profile-id", label, asset);
+export const uploadMarketplacePhoto = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("marketplace-photo", "me", asset);
 
 type Opts = { auth?: boolean; body?: unknown; query?: Record<string, string | number | undefined> };
 
@@ -191,6 +193,10 @@ export type RentalRecord = {
   reviewFromTenant: { stars: number; feedback: string | null; recommend: boolean } | null;
 };
 export type TenantDoc = { id: string; type: string; numberMasked: string | null; expiryDate: string | null; verified: boolean; verificationStatus: string; fileName: string | null; isImage: boolean; url: string; createdAt: string };
+export type MktSeller = { id: string; name: string; avatarUrl: string | null; verified: boolean };
+export type MktListing = { id: string; title: string; description: string | null; category: string; condition: string; price: number; currency: string; location: string | null; images: string[]; status: string; createdAt: string; seller: MktSeller; favorited: boolean; favorites: number; mine: boolean };
+export type MktDetail = Omit<MktListing, "seller"> & { seller: MktSeller & { phone: string | null; email: string; city: string | null; listings: number } };
+export type NewListing = { title: string; description?: string; category: string; condition: string; price: number; location?: string; images: string[] };
 export type ReviewCriteria = { propertyQuality: number; maintenanceSupport: number; communication: number; transparency: number; overall: number };
 
 // ---- Landlord shapes -------------------------------------------------------
@@ -631,4 +637,13 @@ export const api = {
   // landlord inquiry chat
   landlordInquiryThread: (id: string) => request<any>("GET", `/landlord/inquiries/${id}`).then((d) => ({ messages: rows<InquiryMsg>(d, "messages", "items") })),
   landlordReplyInquiry: (id: string, body: string) => request<{ ok: true }>("POST", `/landlord/inquiries/${id}`, { body: { body } }),
+
+  // marketplace
+  marketplaceListings: (q: Record<string, string | number | undefined>) =>
+    request<any>("GET", "/marketplace/listings", { query: q }).then((d) => ({ items: rows<MktListing>(d, "listings", "items") })),
+  marketplaceDetail: (id: string) => request<any>("GET", `/marketplace/listings/${id}`).then((d) => unwrap<MktDetail>(d, "listing")),
+  marketplaceCreate: (b: NewListing) => request<{ ok: true; id: string }>("POST", "/marketplace/listings", { body: b }),
+  marketplaceUpdate: (id: string, b: Partial<NewListing & { status: string }>) => request<{ ok: true }>("PATCH", `/marketplace/listings/${id}`, { body: b }),
+  marketplaceDelete: (id: string) => request<{ ok: true }>("DELETE", `/marketplace/listings/${id}`),
+  marketplaceFavorite: (id: string, on: boolean) => request<{ ok: true; favorited: boolean }>(on ? "POST" : "DELETE", `/marketplace/favorites/${id}`),
 };
