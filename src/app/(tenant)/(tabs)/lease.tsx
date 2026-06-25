@@ -1,11 +1,27 @@
 import { useState } from "react";
 import { Alert, Linking, RefreshControl, View } from "react-native";
 import { Image } from "expo-image";
+import * as WebBrowser from "expo-web-browser";
 import { Screen, Card, H2, Muted, Body, Badge, Row, Loading, ErrorText, Button, money, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, getToken } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
 import { colors, radius } from "@/lib/theme";
+
+// Protected files (e.g. the lease contract) need the auth token. Opening the raw
+// URL in a browser has no session, so attach the token as a query param and open
+// inside the in-app browser.
+async function openProtectedFile(path: string | null | undefined) {
+  const base = fileUrl(path);
+  if (!base) return;
+  const tok = getToken();
+  const url = tok ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(tok)}` : base;
+  try {
+    await WebBrowser.openBrowserAsync(url);
+  } catch {
+    Linking.openURL(url).catch(() => Alert.alert("Could not open", "The document could not be opened."));
+  }
+}
 
 export default function LeaseScreen() {
   const { data, loading, refreshing, error, refresh, reload } = useAsync(() => api.lease());
@@ -77,7 +93,7 @@ export default function LeaseScreen() {
           </Card>
 
           {lease.signedContractUrl ? (
-            <Button title="View signed contract" variant="secondary" onPress={() => Linking.openURL(fileUrl(lease.signedContractUrl)!)} />
+            <Button title="View signed contract" variant="secondary" onPress={() => openProtectedFile(lease.signedContractUrl)} />
           ) : null}
 
           {lease.noticeGivenAt ? (
