@@ -3,6 +3,17 @@ import * as WebBrowser from "expo-web-browser";
 import { getToken } from "./api";
 import { fileUrl } from "./config";
 
+// Build an <Image>-loadable URL for a protected file (e.g. an uploaded avatar).
+// Remote URLs (https…) pass through; /api/files/* paths get the auth token so the
+// Image request is authorized. Returns undefined for empty paths.
+export function authedImageUri(path?: string | null): string | undefined {
+  const base = fileUrl(path);
+  if (!base) return undefined;
+  if (!base.includes("/api/files/")) return base;
+  const tok = getToken();
+  return tok ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(tok)}` : base;
+}
+
 // Protected files (lease contracts, IDs) require auth. Opening the raw URL in a
 // browser has no session, so attach the auth token as a query param and open in
 // the in-app browser, falling back to the system browser.

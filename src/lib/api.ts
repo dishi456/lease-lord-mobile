@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { API_V1, API_BASE } from "./config";
+import { setCurrency } from "./currency";
 
 const TOKEN_KEY = "leaselord.token";
 
@@ -88,6 +89,10 @@ export const uploadPropertyPhoto = (propertyId: string, asset: { uri: string; fi
   uploadFile("property-photo", propertyId, asset);
 export const uploadLeaseContract = (leaseId: string, asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
   uploadFile("lease-contract", leaseId, asset);
+export const uploadAvatar = (asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("avatar", "me", asset);
+export const uploadTenantDocument = (label: string, asset: { uri: string; fileName?: string | null; mimeType?: string | null }) =>
+  uploadFile("profile-id", label, asset);
 
 type Opts = { auth?: boolean; body?: unknown; query?: Record<string, string | number | undefined> };
 
@@ -143,6 +148,7 @@ function safeParse(text: string): unknown {
 export type Me = {
   id: string; fullName: string; email: string; role: "TENANT" | "USER" | "LANDLORD" | "MASTER_ADMIN";
   phone: string | null; avatarUrl: string | null; verified: boolean; status: string;
+  username: string | null; currency: string | null;
 };
 export type AuthResult = { token: string; user: { id: string; fullName: string; email: string; role: Me["role"]; status: string } };
 
@@ -170,8 +176,21 @@ export type Listing = { id: string; ref: string | null; name: string; address: s
 export type PublicReview = { id: string; stars: number; feedback: string | null; createdAt: string; by: string };
 export type ListingDetail = Omit<Listing, "city" | "photo" | "listedAt"> & { description: string | null; maintenanceMonthly: number | null; balconies: number | null; floor: number | null; totalFloors: number | null; carpetAreaSqft: number | null; facing: string | null; bachelorsAllowed: boolean; projectName: string | null; parkingSpots: number | null; listedBy: string; hasLobby: boolean; hasParking: boolean; hasLift: boolean; powerBackup: boolean; availability: string; photos: string[]; landlord: { name: string; verified: boolean; rating: number | null; ratingCount: number }; reviews: PublicReview[] };
 export type Enquiry = { token: string; createdAt: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean; createdAt: string } | null; property: { id: string; ref: string | null; name: string; address: string; photo: string | null } };
-export type TenantProfile = Me & { governmentId: string | null; emergencyContact: string | null; documents: { id: string; type: string; fileName: string | null; label: string | null; url: string; createdAt: string }[] };
+export type TenantProfile = Me & {
+  governmentId: string | null; emergencyContact: string | null;
+  verificationStatus: "VERIFIED" | "PENDING" | "NOT_VERIFIED"; completion: number;
+  prefCountry: string | null; prefState: string | null; prefCity: string | null;
+  documents: { id: string; type: string; fileName: string | null; label: string | null; url: string; createdAt: string }[];
+};
 export type PendingReview = { leaseId: string; endDate: string; status: string; property: { name: string; address: string }; landlordName: string };
+export type RentalRecord = {
+  id: string; status: string; monthlyRent: number; securityDeposit: number; startDate: string; endDate: string; noticeEffectiveDate: string | null;
+  property: { id: string; name: string; address: string; photo: string | null };
+  landlord: { id: string; name: string; avatarUrl: string | null };
+  reviewFromLandlord: { stars: number; feedback: string | null; recommend: boolean } | null;
+  reviewFromTenant: { stars: number; feedback: string | null; recommend: boolean } | null;
+};
+export type TenantDoc = { id: string; type: string; numberMasked: string | null; expiryDate: string | null; verified: boolean; verificationStatus: string; fileName: string | null; isImage: boolean; url: string; createdAt: string };
 export type ReviewCriteria = { propertyQuality: number; maintenanceSupport: number; communication: number; transparency: number; overall: number };
 
 // ---- Landlord shapes -------------------------------------------------------
@@ -278,7 +297,12 @@ export const api = {
   reset: (email: string, code: string, newPassword: string) =>
     request<{ ok: true }>("POST", "/auth/reset", { auth: false, body: { email, code, newPassword } }),
   // Live returns `{ user: {...} }`; older backend returns the user flat.
-  me: () => request<any>("GET", "/me").then((d) => unwrap<Me>(d, "user")),
+  me: () =>
+    request<any>("GET", "/me").then((d) => {
+      const u = unwrap<Me>(d, "user");
+      setCurrency(u?.currency); // keep app-wide currency in sync on every load
+      return u;
+    }),
 
   // OTP (reused existing endpoints, not under /v1)
   sendOtp: (email: string, purpose: "register" | "chat") =>
@@ -329,9 +353,20 @@ export const api = {
       const p = d.profile ?? d;
       return { ...p, documents: d.documents ?? p.documents ?? [] } as TenantProfile;
     }),
-  updateTenantProfile: (b: Partial<{ fullName: string; phone: string; emergencyContact: string; avatarUrl: string }>) =>
-    request<{ ok: true }>("PATCH", "/tenant/profile", { body: b }),
+  updateTenantProfile: (b: Partial<{ fullName: string; username: string; phone: string; emergencyContact: string; governmentId: string; avatarUrl: string; currency: string; prefCountry: string; prefState: string; prefCity: string }>) =>
+    request<{ ok: true; profile?: any }>("PATCH", "/tenant/profile", { body: b }).then((r) => {
+      if (b.currency) setCurrency(b.currency);
+      return r;
+    }),
   // Live sends property/landlord as objects + no flat landlordName; normalize.
+  // Rental history (all leases + two-way reviews).
+  tenantRentals: () => request<any>("GET", "/tenant/rentals").then((d) => ({ items: rows<RentalRecord>(d, "rentals", "items") })),
+  // Identity documents.
+  tenantDocuments: () => request<any>("GET", "/tenant/documents").then((d) => ({ items: rows<TenantDoc>(d, "documents", "items") })),
+  updateTenantDocument: (id: string, b: { label?: string; docNumber?: string; expiryDate?: string }) =>
+    request<{ ok: true }>("PATCH", `/tenant/documents/${id}`, { body: b }),
+  deleteTenantDocument: (id: string) => request<{ ok: true }>("DELETE", `/tenant/documents/${id}`),
+
   pendingReviews: () =>
     request<any>("GET", "/tenant/reviews/pending").then((d) => ({
       items: rows<any>(d, "items", "leases").map((l) => ({

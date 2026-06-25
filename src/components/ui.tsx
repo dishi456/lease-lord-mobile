@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing, statusColor } from "@/lib/theme";
+import { formatMoney } from "@/lib/currency";
 
 export function Screen({ children, scroll = true, refreshControl }: { children: React.ReactNode; scroll?: boolean; refreshControl?: React.ReactElement<any> }) {
   return (
@@ -127,8 +128,9 @@ export function Empty({ title, subtitle }: { title: string; subtitle?: string })
   );
 }
 
+// Delegates to the app-wide currency setting (tenant preference).
 export function money(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
+  return formatMoney(n);
 }
 export function shortDate(iso: string) {
   const d = new Date(iso);

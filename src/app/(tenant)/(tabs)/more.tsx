@@ -7,10 +7,13 @@ import { colors } from "@/lib/theme";
 
 type Item = { icon: keyof typeof Ionicons.glyphMap; label: string; href: string };
 const ITEMS: Item[] = [
+  { icon: "person", label: "Profile", href: "/(tenant)/profile" },
+  { icon: "time", label: "Rental history", href: "/(tenant)/rental-history" },
+  { icon: "document-attach", label: "Documents", href: "/(tenant)/documents" },
   { icon: "chatbubbles", label: "Complaints", href: "/(tenant)/complaints" },
   { icon: "star", label: "Reviews", href: "/(tenant)/reviews" },
+  { icon: "options", label: "Preferences", href: "/(tenant)/preferences" },
   { icon: "notifications", label: "Notifications", href: "/(tenant)/notifications" },
-  { icon: "person", label: "Profile", href: "/(tenant)/profile" },
 ];
 
 export default function More() {
