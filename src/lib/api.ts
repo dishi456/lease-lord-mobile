@@ -354,8 +354,12 @@ export const api = {
   lease: () =>
     request<any>("GET", "/tenant/lease").then((d) => {
       const l = d.lease ?? d.activeLease ?? null;
-      // backend sends landlord as {fullName,...}; app reads {name, phone}.
-      if (l && l.landlord) l.landlord = { name: l.landlord.name ?? l.landlord.fullName ?? "", phone: l.landlord.phone ?? null };
+      if (l) {
+        // backend sends landlord as {fullName,...}; app reads {name, phone}.
+        l.landlord = { name: l.landlord?.name ?? l.landlord?.fullName ?? "—", phone: l.landlord?.phone ?? null };
+        const p = typeof l.property === "object" && l.property ? l.property : {};
+        l.property = { ...p, name: p.name ?? (typeof l.property === "string" ? l.property : "Property"), address: p.address ?? "", photos: Array.isArray(p.photos) ? p.photos : [] };
+      }
       return { lease: l as Lease | null };
     }),
   giveNotice: () => request<{ ok: true; noticeEffectiveDate: string }>("POST", "/tenant/lease/notice", { body: {} }),
@@ -365,7 +369,7 @@ export const api = {
   maintenanceDetail: (id: string) =>
     request<any>("GET", `/tenant/maintenance/${id}`).then((d) => {
       const x = unwrap<any>(d, "request", "maintenance");
-      return { ...x, images: Array.isArray(x.images) ? x.images : [] } as MaintenanceDetail;
+      return { ...x, images: Array.isArray(x.images) ? x.images : [], property: { id: x.property?.id ?? "", name: x.property?.name ?? "Property", address: x.property?.address ?? "" } } as MaintenanceDetail;
     }),
   createMaintenance: (b: { title: string; description: string; priority: string; imageUrls?: string[] }) =>
     request<{ id: string }>("POST", "/tenant/maintenance", { body: b }),
@@ -391,7 +395,13 @@ export const api = {
     }),
   // Live sends property/landlord as objects + no flat landlordName; normalize.
   // Rental history (all leases + two-way reviews).
-  tenantRentals: () => request<any>("GET", "/tenant/rentals").then((d) => ({ items: rows<RentalRecord>(d, "rentals", "items") })),
+  tenantRentals: () => request<any>("GET", "/tenant/rentals").then((d) => ({
+    items: rows<any>(d, "rentals", "items").map((r) => ({
+      ...r,
+      property: { ...(r.property ?? {}), name: r.property?.name ?? "Property", address: r.property?.address ?? "", photo: r.property?.photo ?? null },
+      landlord: { ...(r.landlord ?? {}), name: r.landlord?.name ?? "Landlord", avatarUrl: r.landlord?.avatarUrl ?? null },
+    })) as RentalRecord[],
+  })),
   // Identity documents.
   tenantDocuments: () => request<any>("GET", "/tenant/documents").then((d) => ({ items: rows<TenantDoc>(d, "documents", "items") })),
   updateTenantDocument: (id: string, b: { label?: string; docNumber?: string; expiryDate?: string }) =>
@@ -592,7 +602,9 @@ export const api = {
       reviews: rows<any>(d, "reviews"),
     } as LTenantDetail)),
   // Blacklist
-  landlordBlacklist: () => request<any>("GET", "/landlord/blacklist").then((d) => ({ items: rows<BlacklistEntry>(d, "items") })),
+  landlordBlacklist: () => request<any>("GET", "/landlord/blacklist").then((d) => ({
+    items: rows<any>(d, "items").map((b) => ({ ...b, tenant: { ...(b.tenant ?? {}), fullName: b.tenant?.fullName ?? "Tenant" } })) as BlacklistEntry[],
+  })),
   landlordSetBlacklist: (tenantId: string, reason: string) => request<{ ok: true }>("POST", "/landlord/blacklist", { body: { tenantId, reason } }),
   landlordRemoveBlacklist: (tenantId: string) => request<{ ok: true }>("DELETE", `/landlord/blacklist/${tenantId}`),
 
@@ -698,6 +710,14 @@ export const api = {
 
   // property chat (per-lease)
   chatConversations: () => request<any>("GET", "/chat/conversations").then((d) => ({ items: rows<ChatConversation>(d, "conversations", "items"), totalUnread: d.totalUnread ?? 0 })),
-  chatThread: (leaseId: string) => request<any>("GET", `/chat/${leaseId}`).then((d) => ({ conversation: d.conversation as ChatHeader, messages: rows<ChatMessage>(d, "messages") })),
+  chatThread: (leaseId: string) => request<any>("GET", `/chat/${leaseId}`).then((d) => {
+    const c = d.conversation ?? {};
+    const conversation = {
+      ...c,
+      other: { ...(c.other ?? {}), name: c.other?.name ?? "User", avatarUrl: c.other?.avatarUrl ?? null, lastSeenAt: c.other?.lastSeenAt ?? null },
+      property: { ...(c.property ?? {}), name: c.property?.name ?? "Property", photo: c.property?.photo ?? null },
+    } as ChatHeader;
+    return { conversation, messages: rows<ChatMessage>(d, "messages") };
+  }),
   chatSend: (leaseId: string, b: { body?: string; attachmentUrl?: string; attachmentType?: string }) => request<{ ok: true; message: ChatMessage }>("POST", `/chat/${leaseId}`, { body: b }),
 };

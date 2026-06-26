@@ -13,6 +13,7 @@ const DOC_TYPES = ["Passport", "Driver's License", "National ID", "Aadhaar", "PA
 export default function Documents() {
   const { data, loading, error, reload } = useAsync(() => api.tenantDocuments());
   const [adding, setAdding] = useState(false);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
   const [type, setType] = useState(DOC_TYPES[0]);
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -30,9 +31,11 @@ export default function Documents() {
       if (number.trim() || expiry.trim()) {
         await api.updateTenantDocument(up.id, { docNumber: number.trim() || undefined, expiryDate: expiry.trim() || undefined });
       }
-      setNumber(""); setExpiry(""); setAdding(false);
+      // Replacing: remove the old document now the new one is uploaded.
+      if (replacingId) { try { await api.deleteTenantDocument(replacingId); } catch { /* keep going */ } }
+      setNumber(""); setExpiry(""); setAdding(false); setReplacingId(null);
       await reload();
-      Alert.alert("Uploaded", `${type} added to your documents.`);
+      Alert.alert(replacingId ? "Replaced" : "Uploaded", `${type} ${replacingId ? "updated" : "added"}.`);
     } catch (e) {
       Alert.alert("Upload failed", e instanceof ApiError ? e.message : "Try again.");
     } finally {
@@ -74,10 +77,10 @@ export default function Documents() {
           <Field label="Document number (optional)" value={number} onChangeText={setNumber} placeholder="e.g. A1234567" autoCapitalize="characters" />
           <Field label="Expiry date (optional, YYYY-MM-DD)" value={expiry} onChangeText={setExpiry} placeholder="2030-01-01" autoCapitalize="none" />
           <Button title="Pick image & upload" onPress={addDoc} loading={busy} />
-          <Button title="Cancel" variant="secondary" onPress={() => setAdding(false)} />
+          <Button title="Cancel" variant="secondary" onPress={() => { setAdding(false); setReplacingId(null); }} />
         </Card>
       ) : (
-        <Button title="＋ Add document" onPress={() => setAdding(true)} />
+        <Button title="＋ Add document" onPress={() => { setReplacingId(null); setAdding(true); }} />
       )}
 
       {items.length === 0 ? (
@@ -104,7 +107,7 @@ export default function Documents() {
             </View>
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}><Button title="Preview" variant="secondary" onPress={() => openProtectedFile(d.url)} /></View>
-              <View style={{ flex: 1 }}><Button title="Replace" variant="secondary" onPress={() => { setType(d.type); setAdding(true); }} /></View>
+              <View style={{ flex: 1 }}><Button title="Replace" variant="secondary" onPress={() => { setType(d.type); setReplacingId(d.id); setAdding(true); }} /></View>
               <View style={{ flex: 1 }}><Button title="Delete" variant="danger" onPress={() => confirmDelete(d.id, d.type)} /></View>
             </View>
           </Card>

@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { Screen, Card, H2, Muted, Body, Badge, Row, Loading, ErrorText, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
+import { authedImageUri } from "@/lib/openFile";
 import { radius } from "@/lib/theme";
 
 export default function MaintenanceDetail() {
@@ -39,7 +39,7 @@ export default function MaintenanceDetail() {
       {data.images.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
           {data.images.map((img) => (
-            <Image key={img} source={{ uri: fileUrl(img) }} style={{ width: 140, height: 140, borderRadius: radius.md }} contentFit="cover" />
+            <Image key={img} source={{ uri: authedImageUri(img) }} style={{ width: 140, height: 140, borderRadius: radius.md }} contentFit="cover" />
           ))}
         </ScrollView>
       ) : null}
