@@ -71,18 +71,20 @@ export default function Reviews() {
   return (
     <Screen>
       <H2>Rate your landlords</H2>
-      <Muted>You can review a landlord once your lease has ended.</Muted>
+      <Muted>Review the landlord of any of your current or past leases.</Muted>
       <ErrorText>{error}</ErrorText>
 
       {pending.length === 0 ? (
-        <Empty title="Nothing to review" subtitle="Ended leases you can rate will appear here." />
+        <Empty title="Nothing to review" subtitle="Your active and past leases appear here." />
       ) : (
-        pending.map((l) => (
+        pending.map((l) => {
+          const ended = ["COMPLETED", "EXPIRED", "TERMINATED"].includes(l.status);
+          return (
           <Card key={l.leaseId}>
             <Body style={{ fontWeight: "700" }}>{l.property.name}</Body>
             <Muted>
               {l.landlordName}
-              {l.endDate ? ` · ended ${shortDate(l.endDate)}` : ""}
+              {l.endDate ? ` · ${ended ? "ended" : "ends"} ${shortDate(l.endDate)}` : ""}
             </Muted>
 
             {openLease === l.leaseId ? (
@@ -105,7 +107,8 @@ export default function Reviews() {
               <Button title={l.existingRating ? "Edit review" : "Rate now"} variant="secondary" onPress={() => setOpenLease(l.leaseId)} />
             )}
           </Card>
-        ))
+          );
+        })
       )}
 
       {received.length > 0 ? (

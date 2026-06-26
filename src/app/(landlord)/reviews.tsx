@@ -74,15 +74,17 @@ export default function Reviews() {
   return (
     <Screen>
       <H2>Rate tenants</H2>
-      <Muted>Rate tenants once their lease has ended.</Muted>
+      <Muted>Review the tenant on any of your current or past leases.</Muted>
       <ErrorText>{error}</ErrorText>
       {pending.length === 0 ? (
-        <Empty title="Nothing to review" subtitle="Ended leases you can rate appear here." />
+        <Empty title="Nothing to review" subtitle="Your active and past leases appear here." />
       ) : (
-        pending.map((l) => (
+        pending.map((l) => {
+          const ended = ["COMPLETED", "EXPIRED", "TERMINATED"].includes(l.status);
+          return (
           <Card key={l.leaseId}>
             <Body style={{ fontWeight: "700" }}>{l.tenant}</Body>
-            <Muted>{l.property}{l.endDate ? ` · ended ${shortDate(l.endDate)}` : ""}</Muted>
+            <Muted>{l.property}{l.endDate ? ` · ${ended ? "ended" : "ends"} ${shortDate(l.endDate)}` : ""}</Muted>
             {open === l.leaseId ? (
               <View style={{ gap: 12, marginTop: 8 }}>
                 {CRITERIA.map((cr) => (
@@ -103,7 +105,8 @@ export default function Reviews() {
               <Button title={l.existingRating ? "Edit review" : "Rate now"} variant="secondary" onPress={() => setOpen(l.leaseId)} />
             )}
           </Card>
-        ))
+          );
+        })
       )}
 
       {received.length > 0 ? (

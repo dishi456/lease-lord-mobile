@@ -230,7 +230,7 @@ export type LInvoice = { id: string; periodMonth: string; amount: number; amount
 export type LMaintenance = { id: string; title: string; status: string; priority: string; assignedTo: string | null; images: string[]; createdAt: string; property: string; tenant: string };
 export type LComplaint = { id: string; subject: string; status: string; createdAt: string; property: string | null; tenant: string };
 export type LInquiry = { id: string; token: string; guestName: string; guestPhone: string; property: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean } | null };
-export type LPendingReview = { leaseId: string; endDate: string; property: string; tenant: string };
+export type LPendingReview = { leaseId: string; endDate: string; status: string; property: string; tenant: string };
 export type TenantCriteria = { rentDiscipline: number; propertyMaintenance: number; communication: number; ruleCompliance: number; conduct: number };
 // A normalized rating row for the in-app "reviews I gave / received" lists.
 export type ReviewView = { id: string; stars: number; feedback: string | null; recommend: boolean; createdAt: string; counterparty: string; property: string };
@@ -580,6 +580,7 @@ export const api = {
       items: rows<any>(d, "items", "leases", "pending").map((l) => ({
         leaseId: l.leaseId ?? l.id,
         endDate: l.endDate ?? "",
+        status: l.status ?? "",
         property: pName(l.property),
         tenant: tName(l.tenant),
         existingRating: l.existingRating ?? null,
