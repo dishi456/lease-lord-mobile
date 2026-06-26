@@ -338,7 +338,7 @@ export const api = {
 
   // OTP (reused existing endpoints, not under /v1)
   sendOtp: (email: string, purpose: "register" | "chat") =>
-    request<{ ok: boolean }>("POST", `${API_BASE}/api/otp/send`, { auth: false, body: { email, purpose } }),
+    request<{ ok: boolean; devCode?: string }>("POST", `${API_BASE}/api/otp/send`, { auth: false, body: { email, purpose } }),
   verifyOtp: (email: string, code: string, purpose: "register" | "chat") =>
     request<{ ok: boolean; verifyToken: string }>("POST", `${API_BASE}/api/otp/verify`, { auth: false, body: { email, code, purpose } }),
 

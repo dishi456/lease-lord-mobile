@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,8 +20,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Logo } from "@/components/Logo";
-import { api, type Listing } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
 
 // Flagship-style welcome: full-bleed rotating property hero with floating live
 // activity cards, and a white sheet that lifts over the image carrying the
@@ -30,30 +28,31 @@ import { fileUrl } from "@/lib/config";
 const BLUE = "#2563EB";
 const CYAN = "#06B6D4";
 
+// Real property photos for the hero carousel (curated, royalty-free).
+const HOUSE_IMAGES = [
+  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&q=70",
+  "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=900&q=70",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&q=70",
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&q=70",
+  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=900&q=70",
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=70",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=70",
+  "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&q=70",
+];
+
 export default function Welcome() {
   const router = useRouter();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [featured, setFeatured] = useState<Listing[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.listings({ pageSize: 16, sort: "newest" });
-        // Shuffle so the sign-in preview shows a different random mix each open.
-        setFeatured([...res.items].sort(() => Math.random() - 0.5));
-      } catch {
-        setFeatured([]);
-      }
-    })();
-  }, []);
+  // A different random order of real property photos each open.
+  const [heroImages] = useState(() => [...HOUSE_IMAGES].sort(() => Math.random() - 0.5));
 
   const heroH = Math.round(Math.min(470, Math.max(300, height * 0.48)));
 
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-      <Hero photos={featured.map((f) => f.photo).filter(Boolean) as string[]} height={heroH} />
+      <Hero photos={heroImages} height={heroH} />
 
       {/* White sheet lifts over the hero */}
       <Animated.View entering={FadeInUp.duration(650).springify().damping(18)} style={[s.sheet, { paddingBottom: insets.bottom + 18 }]}>
@@ -81,8 +80,6 @@ export default function Welcome() {
           <Text style={{ color: "#F59E0B", fontSize: 13, letterSpacing: 1 }}>★★★★★</Text>
           <Text style={s.trustText}>Trusted by landlords & tenants alike</Text>
         </Animated.View>
-
-        <FeaturedStrip items={featured} onOpen={(id) => router.push(`/(auth)/listing/${id}`)} />
 
         <View style={{ flex: 1, minHeight: 12 }} />
 
@@ -145,7 +142,7 @@ function Hero({ photos, height }: { photos: string[]; height: number }) {
     <View style={[s.hero, { height }]}>
       {ids.length > 0 ? (
         <Animated.View style={[StyleSheet.absoluteFill, imgStyle]}>
-          <Image source={{ uri: fileUrl(ids[idx]) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+          <Image source={{ uri: ids[idx] }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
         </Animated.View>
       ) : (
         <LinearGradient colors={[BLUE, "#1D4ED8", "#0E7490"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -208,39 +205,8 @@ function BounceButton({ onPress, children }: { onPress: () => void; children: Re
   );
 }
 
-// Horizontal strip of real, tappable properties on the sign-in preview.
-function FeaturedStrip({ items, onOpen }: { items: Listing[]; onOpen: (id: string) => void }) {
-  if (items.length === 0) return null;
-  return (
-    <Animated.View entering={FadeInDown.delay(470).duration(600)} style={{ marginTop: 16 }}>
-      <Text style={s.stripTitle}>FEATURED HOMES</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
-        {items.slice(0, 8).map((p) => (
-          <Pressable key={p.id} onPress={() => onOpen(p.id)} style={s.fcard}>
-            {p.photo ? (
-              <Image source={{ uri: fileUrl(p.photo) }} style={{ width: "100%", height: 72 }} contentFit="cover" />
-            ) : (
-              <View style={{ height: 72, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="business" size={22} color="#94A3B8" />
-              </View>
-            )}
-            <View style={{ padding: 9 }}>
-              <Text style={s.fcardPrice} numberOfLines={1}>₹{(p.rent ?? 0).toLocaleString("en-IN")}/mo</Text>
-              <Text style={s.fcardSub} numberOfLines={1}>{p.city || p.name}</Text>
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </Animated.View>
-  );
-}
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#F8FAFC" },
-  stripTitle: { fontSize: 11, fontWeight: "800", color: "#94A3B8", letterSpacing: 0.6, marginBottom: 9 },
-  fcard: { width: 138, borderRadius: 14, backgroundColor: "#fff", overflow: "hidden", borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#0B1220", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
-  fcardPrice: { fontWeight: "800", fontSize: 13.5, color: "#0F172A" },
-  fcardSub: { fontSize: 11, color: "#64748B", marginTop: 1 },
   hero: { width: "100%", backgroundColor: "#0B1220", overflow: "hidden" },
   heroTop: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingTop: 8 },
   heroBrand: { fontSize: 19, fontWeight: "800", color: "#fff" },

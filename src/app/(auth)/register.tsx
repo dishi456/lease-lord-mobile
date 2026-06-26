@@ -17,6 +17,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("USER");
   const [code, setCode] = useState("");
+  const [devHint, setDevHint] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,9 @@ export default function Register() {
     if (password.length < 8) return setError("Password must be at least 8 characters.");
     setLoading(true);
     try {
-      await api.sendOtp(email.trim(), "register");
+      const r = await api.sendOtp(email.trim(), "register");
+      // Dev/demo without email configured: auto-fill the code the server returns.
+      if (r.devCode) { setCode(r.devCode); setDevHint(`Demo mode — code auto-filled: ${r.devCode}`); }
       setStep("code");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not send code.");
@@ -92,6 +95,7 @@ export default function Register() {
       ) : (
         <>
           <Field label="Verification code" value={code} onChangeText={setCode} keyboardType="number-pad" placeholder="123456" maxLength={6} />
+          {devHint ? <Text style={{ color: "#059669", fontSize: 13, fontWeight: "600" }}>{devHint}</Text> : null}
           <ErrorText>{error}</ErrorText>
           <GradientButton title="Verify & create account" onPress={verifyAndRegister} loading={loading} />
           <Button title="Back" variant="secondary" onPress={() => setStep("details")} />
