@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Alert, RefreshControl, View } from "react-native";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, Muted, Body, Badge, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
 import { StatGrid } from "@/components/stats";
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError, type LInvoice } from "@/lib/api";
+import { openProtectedFile } from "@/lib/openFile";
+import { methodLabel } from "@/lib/payments";
 import { colors } from "@/lib/theme";
 
 export default function Rent() {
@@ -26,6 +29,16 @@ export default function Rent() {
     setBusy(inv.id);
     try { await api.landlordRemindInvoice(inv.id); Alert.alert("Reminder sent", `${inv.tenant} was notified.`); }
     catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Failed"); }
+    finally { setBusy(null); }
+  }
+
+  async function decideProof(paymentId: string, action: "confirm" | "reject") {
+    setBusy(paymentId);
+    try {
+      const r = await api.landlordConfirmPayment(paymentId, action);
+      Alert.alert(action === "confirm" ? "Payment confirmed" : "Proof rejected", action === "confirm" && r.receiptNumber ? `Receipt ${r.receiptNumber}` : "");
+      reload();
+    } catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Failed"); }
     finally { setBusy(null); }
   }
 
@@ -53,15 +66,47 @@ export default function Rent() {
               </View>
               <Badge label={i.status} />
             </View>
-            {i.status !== "PAID" && i.status !== "CANCELLED" ? (
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-                <Pressable disabled={busy === i.id} onPress={() => pay(i)} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 9, alignItems: "center", opacity: busy === i.id ? 0.6 : 1 }}>
-                  <Body style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Record payment</Body>
-                </Pressable>
-                <Pressable disabled={busy === i.id} onPress={() => remind(i)} style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 9, alignItems: "center", opacity: busy === i.id ? 0.6 : 1 }}>
-                  <Body style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>Remind</Body>
-                </Pressable>
+            {/* Tenant-submitted payment proofs awaiting confirmation */}
+            {(i.payments ?? []).filter((p) => p.status === "PENDING").map((p) => (
+              <View key={p.id} style={{ marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: "#D97706", backgroundColor: "#D9770612", padding: 10, gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="hourglass" size={15} color="#D97706" />
+                  <Body style={{ fontWeight: "700", flex: 1, fontSize: 13 }}>Tenant sent proof · {money(p.amount)} · {methodLabel(p.method)}</Body>
+                </View>
+                {p.reference ? <Muted style={{ fontSize: 11 }}>Ref: {p.reference}</Muted> : null}
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {p.proofUrl ? (
+                    <Pressable onPress={() => openProtectedFile(p.proofUrl)} style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 8, alignItems: "center" }}>
+                      <Body style={{ fontSize: 12, fontWeight: "700" }}>View proof</Body>
+                    </Pressable>
+                  ) : null}
+                  <Pressable disabled={busy === p.id} onPress={() => decideProof(p.id, "confirm")} style={{ flex: 1, backgroundColor: colors.success, borderRadius: 8, paddingVertical: 8, alignItems: "center", opacity: busy === p.id ? 0.6 : 1 }}>
+                    <Body style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Confirm</Body>
+                  </Pressable>
+                  <Pressable disabled={busy === p.id} onPress={() => decideProof(p.id, "reject")} style={{ flex: 1, borderWidth: 1, borderColor: colors.danger, borderRadius: 8, paddingVertical: 8, alignItems: "center", opacity: busy === p.id ? 0.6 : 1 }}>
+                    <Body style={{ color: colors.danger, fontSize: 12, fontWeight: "700" }}>Reject</Body>
+                  </Pressable>
+                </View>
               </View>
+            ))}
+
+            {i.status !== "PAID" && i.status !== "CANCELLED" ? (
+              i.hasAgreement === false ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}>
+                  <Ionicons name="lock-closed" size={14} color={colors.muted} />
+                  <Muted style={{ fontSize: 12, flex: 1 }}>Upload the signed lease agreement to record payments.</Muted>
+                  <Pressable disabled={busy === i.id} onPress={() => remind(i)}><Muted style={{ color: colors.primary, fontWeight: "700", fontSize: 12 }}>Remind</Muted></Pressable>
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  <Pressable disabled={busy === i.id} onPress={() => pay(i)} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 9, alignItems: "center", opacity: busy === i.id ? 0.6 : 1 }}>
+                    <Body style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Record payment</Body>
+                  </Pressable>
+                  <Pressable disabled={busy === i.id} onPress={() => remind(i)} style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 9, alignItems: "center", opacity: busy === i.id ? 0.6 : 1 }}>
+                    <Body style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>Remind</Body>
+                  </Pressable>
+                </View>
+              )
             ) : null}
           </Card>
         ))
