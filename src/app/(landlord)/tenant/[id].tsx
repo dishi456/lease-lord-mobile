@@ -5,8 +5,8 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, H2, Muted, Body, Badge, Row, Button, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
-import { api, ApiError, type LTenantReview } from "@/lib/api";
-import { authedImageUri } from "@/lib/openFile";
+import { api, ApiError, type LTenantReview, type TenantDoc } from "@/lib/api";
+import { authedImageUri, openProtectedFile } from "@/lib/openFile";
 import { colors, radius } from "@/lib/theme";
 
 function Stars({ value }: { value: number }) {
@@ -36,6 +36,14 @@ export default function TenantDetail() {
   const [blOpen, setBlOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  async function verifyDoc(docId: string, verified: boolean) {
+    setVerifyingId(docId);
+    try { await api.landlordVerifyDocument(docId, verified); reload(); }
+    catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Try again."); }
+    finally { setVerifyingId(null); }
+  }
 
   if (loading) return <Loading />;
   if (error || !data?.tenant) return <Screen><ErrorText>{error || "Tenant not found."}</ErrorText></Screen>;
@@ -93,6 +101,40 @@ export default function TenantDetail() {
         {t.phone ? <View style={{ flex: 1 }}><Button title="Call" onPress={() => Linking.openURL(`tel:${t.phone}`)} /></View> : null}
         <View style={{ flex: 1 }}><Button title="Email" variant="secondary" onPress={() => Linking.openURL(`mailto:${t.email}`)} /></View>
       </View>
+
+      {/* Identity documents the tenant uploaded — view + verify */}
+      <H2>Documents</H2>
+      <Muted>Identity documents the tenant uploaded. Open to review, then verify.</Muted>
+      {data.documents.length === 0 ? (
+        <Empty title="No documents" subtitle="This tenant hasn't uploaded any documents yet." />
+      ) : (
+        data.documents.map((d: TenantDoc) => (
+          <Card key={d.id} style={{ gap: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: colors.infoBg, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="document-text" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Body style={{ fontWeight: "700" }}>{d.type}</Body>
+                {d.numberMasked ? <Muted>{d.numberMasked}</Muted> : null}
+                <Muted style={{ fontSize: 12 }}>Uploaded {shortDate(d.createdAt)}{d.expiryDate ? ` · expires ${shortDate(d.expiryDate)}` : ""}</Muted>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: (d.verified ? colors.success : "#D97706") + "1A", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 }}>
+                <Ionicons name={d.verified ? "checkmark-circle" : "time"} size={13} color={d.verified ? colors.success : "#D97706"} />
+                <Text style={{ color: d.verified ? colors.success : "#D97706", fontWeight: "700", fontSize: 10 }}>{d.verificationStatus}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ flex: 1 }}><Button title="View document" variant="secondary" onPress={() => openProtectedFile(d.url)} /></View>
+              {d.verified ? (
+                <View style={{ flex: 1 }}><Button title="Un-verify" variant="secondary" onPress={() => verifyDoc(d.id, false)} loading={verifyingId === d.id} /></View>
+              ) : (
+                <View style={{ flex: 1 }}><Button title="Verify" onPress={() => verifyDoc(d.id, true)} loading={verifyingId === d.id} /></View>
+              )}
+            </View>
+          </Card>
+        ))
+      )}
 
       {/* Blacklist management */}
       <Card style={{ gap: 10 }}>

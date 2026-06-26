@@ -244,6 +244,7 @@ export type LTenantDetail = {
   blacklist: { reason: string; createdAt: string } | null;
   leases: LTenantHistoryLease[];
   reviews: LTenantReview[];
+  documents: TenantDoc[];
 };
 export type BlacklistEntry = { tenantId: string; reason: string; createdAt: string; tenant: { id: string; fullName: string; email: string; avatarUrl: string | null } };
 // A rental application = a prospective tenant requesting a property. The landlord
@@ -605,7 +606,11 @@ export const api = {
       blacklist: d.blacklist ?? null,
       leases: rows<any>(d, "leases").map((l) => ({ ...l, monthlyRent: Number(l.monthlyRent ?? 0), property: l.property ?? null, landlord: l.landlord ?? null })),
       reviews: rows<any>(d, "reviews"),
+      documents: rows<TenantDoc>(d, "documents"),
     } as LTenantDetail)),
+  // Landlord verifies (or un-verifies) a tenant's uploaded identity document.
+  landlordVerifyDocument: (docId: string, verified: boolean) =>
+    request<{ ok: true; verified: boolean }>("PATCH", `/landlord/documents/${docId}`, { body: { verified } }),
   // Blacklist
   landlordBlacklist: () => request<any>("GET", "/landlord/blacklist").then((d) => ({
     items: rows<any>(d, "items").map((b) => ({ ...b, tenant: { ...(b.tenant ?? {}), fullName: b.tenant?.fullName ?? "Tenant" } })) as BlacklistEntry[],
