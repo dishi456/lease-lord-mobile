@@ -16,11 +16,10 @@ export const CURRENCIES: Record<string, Info> = {
 };
 export const CURRENCY_CODES = Object.keys(CURRENCIES);
 
-// The app presents prices in USD ($) by default across every role. A stored INR
-// preference (from older accounts) must NOT force the rupee back on.
+// The app presents prices in USD ($) by default. Accounts pick their currency at
+// signup (and in Preferences), and that choice is honoured here.
 let current = "USD";
 export function setCurrency(code?: string | null) {
-  if (code === "INR") code = "USD";
   if (code && CURRENCIES[code]) current = code;
 }
 export function getCurrency() {

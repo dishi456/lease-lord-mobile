@@ -5,9 +5,29 @@ import { Field, ErrorText, Button } from "@/components/ui";
 import { AuthScreen, GradientButton } from "@/components/auth";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
+import { CURRENCIES, CURRENCY_CODES } from "@/lib/currency";
 import { colors, radius } from "@/lib/theme";
 
 type Role = "USER" | "LANDLORD";
+
+// Country → its usual currency, so picking a country pre-selects the currency.
+const COUNTRY_CURRENCY: Record<string, string> = {
+  "United States": "USD",
+  Australia: "AUD",
+  Canada: "CAD",
+  "United Kingdom": "GBP",
+  Ireland: "EUR",
+  India: "INR",
+};
+const COUNTRIES = Object.keys(COUNTRY_CURRENCY);
+
+function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ paddingHorizontal: 13, paddingVertical: 9, borderRadius: radius.md, borderWidth: 1.5, borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.infoBg : colors.card }}>
+      <Text style={{ fontWeight: "700", fontSize: 13, color: active ? colors.primary : colors.text }}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function Register() {
   const { signInWithToken } = useAuth();
@@ -16,6 +36,8 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("USER");
+  const [country, setCountry] = useState("United States");
+  const [currency, setCurrency] = useState("USD");
   const [code, setCode] = useState("");
   const [devHint, setDevHint] = useState("");
   const [error, setError] = useState("");
@@ -44,7 +66,7 @@ export default function Register() {
     setLoading(true);
     try {
       const v = await api.verifyOtp(email.trim(), code.trim(), "register");
-      const res = await api.register({ fullName: fullName.trim(), email: email.trim(), password, role, otpToken: v.verifyToken });
+      const res = await api.register({ fullName: fullName.trim(), email: email.trim(), password, role, country, currency, otpToken: v.verifyToken });
       await signInWithToken(res.token);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Registration failed.");
@@ -86,6 +108,20 @@ export default function Register() {
                   {r === "USER" ? "Browse & enquire" : "List properties"}
                 </Text>
               </Pressable>
+            ))}
+          </View>
+
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Country</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {COUNTRIES.map((c) => (
+              <Chip key={c} label={c} active={country === c} onPress={() => { setCountry(c); setCurrency(COUNTRY_CURRENCY[c]); }} />
+            ))}
+          </View>
+
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Currency</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {CURRENCY_CODES.map((c) => (
+              <Chip key={c} label={`${CURRENCIES[c].symbol} ${c}`} active={currency === c} onPress={() => setCurrency(c)} />
             ))}
           </View>
 

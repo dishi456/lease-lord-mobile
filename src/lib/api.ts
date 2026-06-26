@@ -324,7 +324,7 @@ export const api = {
   // auth
   login: (email: string, password: string, otp?: string) =>
     request<AuthResult>("POST", "/auth/login", { auth: false, body: { email, password, otp } }),
-  register: (b: { fullName: string; email: string; password: string; role: "USER" | "LANDLORD"; otpToken: string }) =>
+  register: (b: { fullName: string; email: string; password: string; role: "USER" | "LANDLORD"; country?: string; currency?: string; otpToken: string }) =>
     request<AuthResult>("POST", "/auth/register", { auth: false, body: b }),
   forgot: (email: string) => request<{ ok: true }>("POST", "/auth/forgot", { auth: false, body: { email } }),
   reset: (email: string, code: string, newPassword: string) =>
@@ -565,7 +565,7 @@ export const api = {
     }),
   landlordUpdateProperty: (id: string, b: Record<string, unknown>) => request<{ ok: true }>("PATCH", `/landlord/properties/${id}`, { body: b }),
   // Add a tenant directly (requires the new backend POST /landlord/tenants).
-  landlordAddTenant: (b: { fullName: string; email: string; password: string; phone?: string; governmentId?: string }) =>
+  landlordAddTenant: (b: { fullName: string; email: string; password: string; phone?: string; governmentId?: string; country?: string; currency?: string }) =>
     request<{ ok: true; id: string }>("POST", "/landlord/tenants", { body: b }),
 
   // Seeker: apply to rent / book a visit (requires the new backend account endpoints).
