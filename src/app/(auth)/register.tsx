@@ -66,7 +66,10 @@ export default function Register() {
     setLoading(true);
     try {
       const v = await api.verifyOtp(email.trim(), code.trim(), "register");
-      const res = await api.register({ fullName: fullName.trim(), email: email.trim(), password, role, country, currency, otpToken: v.verifyToken });
+      const res = await api.register({
+        fullName: fullName.trim(), email: email.trim(), password, role, otpToken: v.verifyToken,
+        ...(role === "LANDLORD" ? { country, currency } : {}),
+      });
       await signInWithToken(res.token);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Registration failed.");
@@ -111,19 +114,23 @@ export default function Register() {
             ))}
           </View>
 
-          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Country</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {COUNTRIES.map((c) => (
-              <Chip key={c} label={c} active={country === c} onPress={() => { setCountry(c); setCurrency(COUNTRY_CURRENCY[c]); }} />
-            ))}
-          </View>
+          {role === "LANDLORD" ? (
+            <>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Country</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {COUNTRIES.map((c) => (
+                  <Chip key={c} label={c} active={country === c} onPress={() => { setCountry(c); setCurrency(COUNTRY_CURRENCY[c]); }} />
+                ))}
+              </View>
 
-          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Currency</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {CURRENCY_CODES.map((c) => (
-              <Chip key={c} label={`${CURRENCIES[c].symbol} ${c}`} active={currency === c} onPress={() => setCurrency(c)} />
-            ))}
-          </View>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Currency</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {CURRENCY_CODES.map((c) => (
+                  <Chip key={c} label={`${CURRENCIES[c].symbol} ${c}`} active={currency === c} onPress={() => setCurrency(c)} />
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <ErrorText>{error}</ErrorText>
           <GradientButton title="Send verification code" onPress={sendCode} loading={loading} />
