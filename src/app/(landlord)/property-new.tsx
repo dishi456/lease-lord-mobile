@@ -7,6 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Screen, Card, H2, Field, Button, ErrorText, Muted, Body } from "@/components/ui";
 import { api, ApiError, uploadPropertyPhoto, uploadFile, type NewProperty } from "@/lib/api";
 import { PROPERTY_TYPES, TYPE_FIELDS, type FieldDef } from "@/lib/property-forms";
+import { useUsernameGate } from "@/components/UsernameGate";
 import { colors, radius } from "@/lib/theme";
 
 type Photo = { uri: string; fileName?: string | null; mimeType?: string | null };
@@ -56,6 +57,7 @@ function DynamicField({ def, value, onChange }: { def: FieldDef; value: any; onC
 
 export default function NewPropertyScreen() {
   const router = useRouter();
+  const gate = useUsernameGate("add a property");
   const [type, setType] = useState<NewProperty["type"]>("APARTMENT");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -123,6 +125,8 @@ export default function NewPropertyScreen() {
       setError(e instanceof ApiError ? e.message : "Could not list the property.");
     } finally { setLoading(false); setStatus(""); }
   }
+
+  if (gate) return gate;
 
   return (
     <Screen>

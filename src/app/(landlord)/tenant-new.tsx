@@ -3,11 +3,13 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Field, Button, ErrorText, Muted } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { useUsernameGate } from "@/components/UsernameGate";
 
 // Landlord creates a tenant account directly (status ACTIVE, linked to them).
 // Mirrors the website's "Add tenant". Needs the backend POST /landlord/tenants.
 export default function NewTenant() {
   const router = useRouter();
+  const gate = useUsernameGate("add a tenant");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -39,6 +41,8 @@ export default function NewTenant() {
       setLoading(false);
     }
   }
+
+  if (gate) return gate;
 
   return (
     <Screen>
