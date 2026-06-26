@@ -4,18 +4,23 @@
 // reads the current value at render time.
 
 type Info = { symbol: string; rate: number; locale: string; label: string };
+// Amounts are stored as plain "rent-sized" numbers (e.g. 2500), so the app shows
+// them directly with a $ — USD rate is 1 (number unchanged, just a dollar sign).
 export const CURRENCIES: Record<string, Info> = {
+  USD: { symbol: "$", rate: 1, locale: "en-US", label: "US Dollar" },
+  AUD: { symbol: "A$", rate: 1, locale: "en-AU", label: "Australian Dollar" },
+  CAD: { symbol: "C$", rate: 1, locale: "en-CA", label: "Canadian Dollar" },
+  GBP: { symbol: "£", rate: 1, locale: "en-GB", label: "British Pound" },
+  EUR: { symbol: "€", rate: 1, locale: "en-IE", label: "Euro" },
   INR: { symbol: "₹", rate: 1, locale: "en-IN", label: "Indian Rupee" },
-  USD: { symbol: "$", rate: 0.012, locale: "en-US", label: "US Dollar" },
-  CAD: { symbol: "C$", rate: 0.016, locale: "en-CA", label: "Canadian Dollar" },
-  GBP: { symbol: "£", rate: 0.0095, locale: "en-GB", label: "British Pound" },
-  EUR: { symbol: "€", rate: 0.011, locale: "en-IE", label: "Euro" },
-  AUD: { symbol: "A$", rate: 0.018, locale: "en-AU", label: "Australian Dollar" },
 };
 export const CURRENCY_CODES = Object.keys(CURRENCIES);
 
+// The app presents prices in USD ($) by default across every role. A stored INR
+// preference (from older accounts) must NOT force the rupee back on.
 let current = "USD";
 export function setCurrency(code?: string | null) {
+  if (code === "INR") code = "USD";
   if (code && CURRENCIES[code]) current = code;
 }
 export function getCurrency() {

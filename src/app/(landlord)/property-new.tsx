@@ -157,8 +157,8 @@ export default function NewPropertyScreen() {
 
       <Card style={{ gap: 12 }}>
         <H2>Pricing & terms</H2>
-        <Field label="Rent / price (₹)" value={rent} onChangeText={setRent} keyboardType="number-pad" placeholder="15000" />
-        <Field label="Security deposit (₹)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" placeholder="Optional" />
+        <Field label="Rent / price ($)" value={rent} onChangeText={setRent} keyboardType="number-pad" placeholder="15000" />
+        <Field label="Security deposit ($)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" placeholder="Optional" />
         <View style={{ gap: 6 }}>
           <Text style={{ fontSize: 13, fontWeight: "600", color: colors.muted }}>Furnishing</Text>
           <Chips options={FURNISH} value={furnishing} onChange={setFurnishing} />

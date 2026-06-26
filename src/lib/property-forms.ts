@@ -39,7 +39,7 @@ export const TYPE_FIELDS: Record<string, FieldDef[]> = {
     { key: "balcony", label: "Balcony", type: "bool" },
     { key: "gym", label: "Gym access", type: "bool" },
     { key: "parking", label: "Parking", type: "bool" },
-    { key: "maintenanceFee", label: "Maintenance fee (₹)", type: "number" },
+    { key: "maintenanceFee", label: "Maintenance fee ($)", type: "number" },
   ],
   COMMERCIAL: [
     { key: "unitType", label: "Unit type", type: "select", options: [{ k: "OFFICE", l: "Office" }, { k: "RETAIL", l: "Retail shop" }, { k: "WAREHOUSE", l: "Warehouse" }, { k: "INDUSTRIAL", l: "Industrial unit" }] },

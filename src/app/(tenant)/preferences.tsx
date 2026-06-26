@@ -19,7 +19,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 
 export default function Preferences() {
   const { data, loading, error } = useAsync(() => api.tenantProfile());
-  const [currency, setCur] = useState("INR");
+  const [currency, setCur] = useState("USD");
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
@@ -27,7 +27,7 @@ export default function Preferences() {
 
   useEffect(() => {
     if (data) {
-      setCur(data.currency ?? "INR");
+      setCur(data.currency === "INR" || !data.currency ? "USD" : data.currency);
       setCountry(data.prefCountry ?? "");
       setState(data.prefState ?? "");
       setCity(data.prefCity ?? "");

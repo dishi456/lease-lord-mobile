@@ -20,14 +20,14 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 export default function LandlordPreferences() {
   const { refresh: refreshAuth } = useAuth();
   const { data, loading, error } = useAsync(() => api.landlordProfile());
-  const [currency, setCur] = useState("INR");
+  const [currency, setCur] = useState("USD");
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (data) { setCur(data.currency ?? "INR"); setCountry(data.prefCountry ?? ""); setState(data.prefState ?? ""); setCity(data.prefCity ?? ""); }
+    if (data) { setCur(data.currency === "INR" || !data.currency ? "USD" : data.currency); setCountry(data.prefCountry ?? ""); setState(data.prefState ?? ""); setCity(data.prefCity ?? ""); }
   }, [data]);
 
   if (loading) return <Loading />;

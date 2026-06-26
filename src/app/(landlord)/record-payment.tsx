@@ -69,7 +69,7 @@ export default function RecordPayment() {
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <Field label="Amount received (₹)" value={amount} onChangeText={setAmount} keyboardType="number-pad" />
+        <Field label="Amount received ($)" value={amount} onChangeText={setAmount} keyboardType="number-pad" />
         <Muted>Enter less than the balance to record a partial payment.</Muted>
 
         <View style={{ gap: 6 }}>

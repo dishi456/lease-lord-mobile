@@ -194,8 +194,8 @@ function EditForm({ p, busy, onSave, onCancel }: { p: LPropertyDetail; busy: boo
         <Chips options={TYPES} value={type} onChange={setType} />
       </View>
       <Field label="Address" value={address} onChangeText={setAddress} multiline />
-      <Field label="Monthly rent (₹)" value={rent} onChangeText={setRent} keyboardType="number-pad" />
-      <Field label="Security deposit (₹)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" />
+      <Field label="Monthly rent ($)" value={rent} onChangeText={setRent} keyboardType="number-pad" />
+      <Field label="Security deposit ($)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" />
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}><Field label="Bedrooms" value={rooms} onChangeText={setRooms} keyboardType="number-pad" /></View>
         <View style={{ flex: 1 }}><Field label="Bathrooms" value={bathrooms} onChangeText={setBathrooms} keyboardType="number-pad" /></View>

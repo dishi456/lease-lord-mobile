@@ -93,7 +93,7 @@ export default function NewListing() {
         </View>
       </View>
 
-      <Field label="Price (₹)" value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="5000" />
+      <Field label="Price ($)" value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="5000" />
       <Field label="Location" value={location} onChangeText={setLocation} placeholder="e.g. Koregaon Park, Pune" />
       <Field label="Description" value={description} onChangeText={setDescription} placeholder="Condition, age, pickup details…" multiline />
 

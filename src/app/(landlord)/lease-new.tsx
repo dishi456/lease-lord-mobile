@@ -137,8 +137,8 @@ export default function NewLease() {
           {endDate ? <Muted>Ends {fmt(endDate)}</Muted> : null}
         </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <View style={{ flex: 1 }}><Field label="Monthly rent (₹)" value={rent} onChangeText={setRent} keyboardType="number-pad" /></View>
-          <View style={{ flex: 1 }}><Field label="Deposit (₹)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" /></View>
+          <View style={{ flex: 1 }}><Field label="Monthly rent ($)" value={rent} onChangeText={setRent} keyboardType="number-pad" /></View>
+          <View style={{ flex: 1 }}><Field label="Deposit ($)" value={deposit} onChangeText={setDeposit} keyboardType="number-pad" /></View>
         </View>
         <Field label="Notice period (days)" value={notice} onChangeText={setNotice} keyboardType="number-pad" />
         <Field label="Terms / notes (optional)" value={terms} onChangeText={setTerms} placeholder="e.g. Rent due by the 5th. No subletting." multiline />
