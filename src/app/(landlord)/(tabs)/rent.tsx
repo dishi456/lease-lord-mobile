@@ -32,6 +32,18 @@ export default function Rent() {
     finally { setBusy(null); }
   }
 
+  function markPaid(inv: LInvoice, paid: boolean) {
+    Alert.alert(paid ? "Mark as paid?" : "Mark as unpaid?", paid ? `Mark ${inv.tenant}'s rent (${money(inv.amount)}) as paid?` : "Revert this invoice to unpaid?", [
+      { text: "Cancel", style: "cancel" },
+      { text: paid ? "Mark paid" : "Mark unpaid", onPress: async () => {
+        setBusy(inv.id);
+        try { await api.landlordMarkPaid(inv.id, paid); reload(); }
+        catch (e) { Alert.alert("Error", e instanceof ApiError ? e.message : "Failed"); }
+        finally { setBusy(null); }
+      } },
+    ]);
+  }
+
   async function decideProof(paymentId: string, action: "confirm" | "reject") {
     setBusy(paymentId);
     try {
@@ -107,6 +119,19 @@ export default function Rent() {
                   </Pressable>
                 </View>
               )
+            ) : null}
+
+            {/* Quick paid/unpaid toggle */}
+            {i.status === "PAID" ? (
+              <Pressable disabled={busy === i.id} onPress={() => markPaid(i, false)} style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10 }}>
+                <Ionicons name="refresh" size={14} color={colors.danger} />
+                <Muted style={{ color: colors.danger, fontSize: 12, fontWeight: "700" }}>Mark as unpaid</Muted>
+              </Pressable>
+            ) : i.status !== "CANCELLED" ? (
+              <Pressable disabled={busy === i.id} onPress={() => markPaid(i, true)} style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10 }}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Muted style={{ color: colors.success, fontSize: 12, fontWeight: "700" }}>Mark as paid (quick)</Muted>
+              </Pressable>
             ) : null}
           </Card>
         ))

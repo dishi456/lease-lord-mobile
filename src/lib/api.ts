@@ -263,6 +263,7 @@ export type LandlordProfile = {
   id: string; fullName: string; email: string; phone: string | null; avatarUrl: string | null;
   username: string | null; verified: boolean; status: string;
   verificationStatus: "VERIFIED" | "PENDING" | "NOT_VERIFIED"; completion: number;
+  currency: string | null; prefCountry: string | null; prefState: string | null; prefCity: string | null;
   stats: { properties: number; tenants: number; rating: number | null; ratingCount: number };
 };
 
@@ -503,6 +504,9 @@ export const api = {
   // Confirm / reject a tenant-submitted payment proof.
   landlordConfirmPayment: (paymentId: string, action: "confirm" | "reject") =>
     request<{ ok: true; receiptNumber?: string; status?: string }>("POST", "/landlord/rent/confirm", { body: { paymentId, action } }),
+  // Quick toggle: mark an invoice paid / unpaid.
+  landlordMarkPaid: (invoiceId: string, paid: boolean) =>
+    request<{ ok: true; status: string }>("POST", "/landlord/rent/mark", { body: { invoiceId, paid } }),
   // Tenant submits a payment proof (creates a PENDING payment for confirmation).
   tenantSubmitProof: (b: { invoiceId: string; method: string; reference?: string; proofUrl: string }) =>
     request<{ ok: true; paymentId: string }>("POST", "/tenant/payments/proof", { body: b }),
@@ -590,8 +594,8 @@ export const api = {
     } as ReviewBundle)),
   // Full tenant detail (profile + leases) — landlord taps a tenant in the list.
   landlordProfile: () => request<any>("GET", "/landlord/profile").then((d) => d.profile as LandlordProfile),
-  updateLandlordProfile: (b: Partial<{ fullName: string; username: string; phone: string; avatarUrl: string }>) =>
-    request<{ ok: true; profile?: any }>("PATCH", "/landlord/profile", { body: b }),
+  updateLandlordProfile: (b: Partial<{ fullName: string; username: string; phone: string; avatarUrl: string; currency: string; prefCountry: string; prefState: string; prefCity: string }>) =>
+    request<{ ok: true; profile?: any }>("PATCH", "/landlord/profile", { body: b }).then((r) => { if (b.currency) setCurrency(b.currency); return r; }),
   landlordTenant: (id: string) =>
     request<any>("GET", `/landlord/tenants/${id}`).then((d) => ({
       tenant: d.tenant ?? null,

@@ -8,6 +8,7 @@ import { colors } from "@/lib/theme";
 type Item = { icon: keyof typeof Ionicons.glyphMap; label: string; href: string };
 const ITEMS: Item[] = [
   { icon: "person", label: "Profile", href: "/(landlord)/profile" },
+  { icon: "options", label: "Preferences", href: "/(landlord)/preferences" },
   { icon: "person-add", label: "Tenant requests", href: "/(landlord)/applications" },
   { icon: "calendar", label: "Visit requests", href: "/(landlord)/visits" },
   { icon: "document-text", label: "Leases", href: "/(landlord)/leases" },
