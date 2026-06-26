@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -6,11 +6,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { authedImageUri } from "@/lib/openFile";
 import { GradientHeader, HeaderIcon } from "@/components/header";
 import { AccountMenu } from "@/components/AccountMenu";
+import { LandlordGuide } from "@/components/LandlordGuide";
 import { StatGrid } from "@/components/stats";
 import { Loading, ErrorText, money } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
+import { isLandlordOnboarded, markLandlordOnboarded } from "@/lib/onboarding";
 import { colors } from "@/lib/theme";
 
 function greeting() {
@@ -33,9 +35,26 @@ export default function LandlordHome() {
   const { user } = useAuth();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const { data, loading, refreshing, error, refresh } = useAsync(() => api.landlordDashboard());
 
-  if (loading) return <Loading />;
+  // Mandatory one-time feature guide on first sign-in (cannot be skipped).
+  useEffect(() => {
+    if (!user?.id) return;
+    isLandlordOnboarded(user.id).then((done) => { if (!done) setShowGuide(true); });
+  }, [user?.id]);
+
+  async function finishGuide() {
+    if (user?.id) await markLandlordOnboarded(user.id);
+    setShowGuide(false);
+  }
+
+  if (loading) return (
+    <>
+      <Loading />
+      <LandlordGuide visible={showGuide} onDone={finishGuide} />
+    </>
+  );
   const initial = (user?.fullName ?? "L").charAt(0).toUpperCase();
   const avatar = authedImageUri(user?.avatarUrl);
 
@@ -99,6 +118,8 @@ export default function LandlordHome() {
         { icon: "star-outline", label: "Reviews", onPress: () => router.push("/(landlord)/reviews") },
         { icon: "notifications-outline", label: "Notifications", onPress: () => router.push("/(tenant)/notifications") },
       ]} />
+
+      <LandlordGuide visible={showGuide} onDone={finishGuide} />
     </View>
   );
 }
