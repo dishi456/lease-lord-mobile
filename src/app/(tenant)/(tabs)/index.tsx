@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,11 +6,14 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { GradientHeader, HeaderIcon } from "@/components/header";
 import { AccountMenu } from "@/components/AccountMenu";
+import { FeatureGuide } from "@/components/FeatureGuide";
+import { TENANT_STEPS } from "@/lib/guides";
 import { Loading, ErrorText, money, shortDate } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useAsync } from "@/lib/useAsync";
 import { api, type Dashboard, type Notification, type ChatConversation } from "@/lib/api";
 import { authedImageUri } from "@/lib/openFile";
+import { isGuideDone, markGuideDone } from "@/lib/onboarding";
 import { colors } from "@/lib/theme";
 
 function msgTime(iso?: string | null) {
@@ -43,6 +46,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const { data, loading, refreshing, error, refresh } = useAsync(async () => {
     const [dash, notifs, chats] = await Promise.all([
       api.dashboard(),
@@ -52,7 +56,23 @@ export default function Dashboard() {
     return { dash, notifs: notifs.items.slice(0, 3), chats: chats.items.slice(0, 3) } as { dash: Dashboard; notifs: Notification[]; chats: ChatConversation[] };
   });
 
-  if (loading) return <Loading />;
+  // Mandatory one-time feature guide on first sign-in (cannot be skipped).
+  useEffect(() => {
+    if (!user?.id) return;
+    isGuideDone(user.id, "tenant").then((done) => { if (!done) setShowGuide(true); });
+  }, [user?.id]);
+
+  async function finishGuide() {
+    if (user?.id) await markGuideDone(user.id, "tenant");
+    setShowGuide(false);
+  }
+
+  if (loading) return (
+    <>
+      <Loading />
+      <FeatureGuide visible={showGuide} steps={TENANT_STEPS} onDone={finishGuide} />
+    </>
+  );
   const dash = data?.dash;
   const chats = data?.chats ?? [];
   const unreadTotal = chats.reduce((n, c) => n + (c.unread || 0), 0);
@@ -206,6 +226,8 @@ export default function Dashboard() {
           { icon: "star-outline", label: "Reviews", onPress: () => router.push("/(tenant)/reviews") },
         ]}
       />
+
+      <FeatureGuide visible={showGuide} steps={TENANT_STEPS} onDone={finishGuide} />
     </View>
   );
 }

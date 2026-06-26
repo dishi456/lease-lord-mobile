@@ -6,13 +6,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { authedImageUri } from "@/lib/openFile";
 import { GradientHeader, HeaderIcon } from "@/components/header";
 import { AccountMenu } from "@/components/AccountMenu";
-import { LandlordGuide } from "@/components/LandlordGuide";
+import { FeatureGuide } from "@/components/FeatureGuide";
+import { LANDLORD_STEPS } from "@/lib/guides";
 import { StatGrid } from "@/components/stats";
 import { Loading, ErrorText, money } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
-import { isLandlordOnboarded, markLandlordOnboarded } from "@/lib/onboarding";
+import { isGuideDone, markGuideDone } from "@/lib/onboarding";
 import { colors } from "@/lib/theme";
 
 function greeting() {
@@ -41,18 +42,18 @@ export default function LandlordHome() {
   // Mandatory one-time feature guide on first sign-in (cannot be skipped).
   useEffect(() => {
     if (!user?.id) return;
-    isLandlordOnboarded(user.id).then((done) => { if (!done) setShowGuide(true); });
+    isGuideDone(user.id, "landlord").then((done) => { if (!done) setShowGuide(true); });
   }, [user?.id]);
 
   async function finishGuide() {
-    if (user?.id) await markLandlordOnboarded(user.id);
+    if (user?.id) await markGuideDone(user.id, "landlord");
     setShowGuide(false);
   }
 
   if (loading) return (
     <>
       <Loading />
-      <LandlordGuide visible={showGuide} onDone={finishGuide} />
+      <FeatureGuide visible={showGuide} steps={LANDLORD_STEPS} onDone={finishGuide} />
     </>
   );
   const initial = (user?.fullName ?? "L").charAt(0).toUpperCase();
@@ -119,7 +120,7 @@ export default function LandlordHome() {
         { icon: "notifications-outline", label: "Notifications", onPress: () => router.push("/(tenant)/notifications") },
       ]} />
 
-      <LandlordGuide visible={showGuide} onDone={finishGuide} />
+      <FeatureGuide visible={showGuide} steps={LANDLORD_STEPS} onDone={finishGuide} />
     </View>
   );
 }
