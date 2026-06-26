@@ -5,6 +5,7 @@ import { Screen, Card, H2, Muted, Body, Loading, ErrorText, Empty, shortDate } f
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { colors } from "@/lib/theme";
 
 export default function Approvals() {
@@ -42,7 +43,7 @@ export default function Approvals() {
       <H2>Properties ({properties.length})</H2>
       {properties.length === 0 ? <Muted>No properties awaiting approval.</Muted> : properties.map((p) => (
         <Card key={p.id} style={{ padding: 0, overflow: "hidden" }}>
-          {p.photo ? <Image source={{ uri: fileUrl(p.photo) }} style={{ width: "100%", height: 130 }} contentFit="cover" /> : null}
+          <Image source={{ uri: fileUrl(p.photo) ?? houseImage(p.id) }} style={{ width: "100%", height: 130 }} contentFit="cover" transition={200} />
           <View style={{ padding: 14 }}>
             <Body style={{ fontWeight: "700" }}>{p.name}</Body>
             <Muted>{p.address}</Muted>

@@ -6,6 +6,7 @@ import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty, mo
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { colors } from "@/lib/theme";
 
 export default function Properties() {
@@ -25,13 +26,7 @@ export default function Properties() {
         items.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/(landlord)/property/${p.id}`)}>
           <Card style={{ padding: 0, overflow: "hidden" }}>
-            {p.photo ? (
-              <Image source={{ uri: fileUrl(p.photo) }} style={{ width: "100%", height: 150 }} contentFit="cover" />
-            ) : (
-              <View style={{ height: 150, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="business" size={38} color={colors.subtle} />
-              </View>
-            )}
+            <Image source={{ uri: fileUrl(p.photo) ?? houseImage(p.id) }} style={{ width: "100%", height: 150 }} contentFit="cover" transition={200} />
             <View style={{ padding: 14, gap: 4 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Body style={{ fontWeight: "800", flex: 1 }}>{p.name}</Body>

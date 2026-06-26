@@ -9,6 +9,7 @@ import { useAsync } from "@/lib/useAsync";
 import { api, uploadPropertyPhoto, type LPropertyDetail } from "@/lib/api";
 import { detailLabel } from "@/lib/property-forms";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { colors, radius } from "@/lib/theme";
 
 const AVAIL_NEXT: Record<string, string> = { AVAILABLE: "OCCUPIED", OCCUPIED: "UNAVAILABLE", UNAVAILABLE: "AVAILABLE" };
@@ -96,9 +97,7 @@ export default function PropertyDetail() {
           ))}
         </ScrollView>
       ) : (
-        <View style={{ height: 160, backgroundColor: "#E2E8F0", borderRadius: radius.lg, alignItems: "center", justifyContent: "center" }}>
-          <Ionicons name="business" size={44} color={colors.subtle} />
-        </View>
+        <Image source={{ uri: houseImage(p.id) }} style={{ width: "100%", height: 200, borderRadius: radius.lg }} contentFit="cover" transition={200} />
       )}
 
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

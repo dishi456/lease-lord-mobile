@@ -7,6 +7,7 @@ import { GradientHeader } from "@/components/header";
 import { Card, Muted, Body, Badge, Empty, ErrorText, money } from "@/components/ui";
 import { api, ApiError, type Listing } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { getCoords, type Coords } from "@/lib/location";
 import { colors, spacing } from "@/lib/theme";
 
@@ -129,13 +130,7 @@ function ListingCard({ item, onPress }: { item: Listing; onPress: () => void }) 
   return (
     <Pressable onPress={onPress}>
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        {item.photo ? (
-          <Image source={{ uri: fileUrl(item.photo) }} style={{ width: "100%", height: 170 }} contentFit="cover" />
-        ) : (
-          <View style={{ height: 170, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="image" size={40} color={colors.subtle} />
-          </View>
-        )}
+        <Image source={{ uri: fileUrl(item.photo) ?? houseImage(item.id) }} style={{ width: "100%", height: 170 }} contentFit="cover" transition={200} />
         {item.distanceKm != null ? (
           <View style={{ position: "absolute", top: 10, left: 10, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 }}>
             <Ionicons name="location" size={12} color="#fff" />

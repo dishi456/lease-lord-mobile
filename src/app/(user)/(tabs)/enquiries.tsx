@@ -5,6 +5,7 @@ import { Screen, Card, Muted, Body, Loading, ErrorText, Empty, shortDate } from 
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { colors, radius } from "@/lib/theme";
 
 export default function Enquiries() {
@@ -21,13 +22,7 @@ export default function Enquiries() {
       ) : (
         items.map((e) => (
           <Card key={e.token} style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-            {e.property.photo ? (
-              <Image source={{ uri: fileUrl(e.property.photo) }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" />
-            ) : (
-              <View style={{ width: 56, height: 56, borderRadius: radius.md, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="home" size={24} color={colors.subtle} />
-              </View>
-            )}
+            <Image source={{ uri: fileUrl(e.property.photo) ?? houseImage(e.property.id) }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" transition={200} />
             <View style={{ flex: 1 }}>
               <Body style={{ fontWeight: "700" }}>{e.property.name}</Body>
               {e.lastMessage ? (

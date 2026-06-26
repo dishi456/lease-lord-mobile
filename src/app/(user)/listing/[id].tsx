@@ -7,6 +7,7 @@ import { Screen, Card, H1, H2, Muted, Body, Badge, Row, Button, Loading, ErrorTe
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { colors, radius } from "@/lib/theme";
 
 // A few near-future tour slots so the seeker can book without a date picker.
@@ -68,9 +69,7 @@ export default function ListingDetail() {
           ))}
         </ScrollView>
       ) : (
-        <View style={{ height: 180, backgroundColor: "#E2E8F0", borderRadius: radius.lg, alignItems: "center", justifyContent: "center" }}>
-          <Ionicons name="image" size={48} color={colors.subtle} />
-        </View>
+        <Image source={{ uri: houseImage(id) }} style={{ width: "100%", height: 210, borderRadius: radius.lg }} contentFit="cover" transition={200} />
       )}
 
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
