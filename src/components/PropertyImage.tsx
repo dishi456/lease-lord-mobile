@@ -19,7 +19,11 @@ export function PropertyImage({
   height?: number;
 }) {
   const [failed, setFailed] = useState(false);
-  const primary = fileUrl(path);
+  // Only a genuinely uploaded photo (/api/files/...) or a real remote URL counts.
+  // Seed/demo placeholders like "demo/p1.png" are solid-colour stand-ins that load
+  // fine but aren't real photos — skip them and show a real house image instead.
+  const isReal = !!path && (path.startsWith("http") || path.includes("/api/files"));
+  const primary = isReal ? fileUrl(path) : undefined;
   const uri = !failed && primary ? primary : houseImage(seed);
   return (
     <Image

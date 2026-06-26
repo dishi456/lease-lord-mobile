@@ -4,8 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, H2, Muted, Body, Badge, Row, Loading, ErrorText, Empty, money, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api, type RentalRecord } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { authedImageUri } from "@/lib/openFile";
 import { colors, radius } from "@/lib/theme";
 
@@ -54,11 +53,10 @@ export default function RentalHistory() {
         <Empty title="No rental records yet" subtitle="Your past and current leases will appear here." />
       ) : (
         items.map((r) => {
-          const photo = authedImageUri(r.property.photo) ?? (r.property.photo ? fileUrl(r.property.photo) : undefined) ?? houseImage(r.id);
           const lavatar = authedImageUri(r.landlord.avatarUrl);
           return (
             <Card key={r.id} style={{ padding: 0, overflow: "hidden" }}>
-              <Image source={{ uri: photo }} style={{ width: "100%", height: 140 }} contentFit="cover" transition={200} />
+              <PropertyImage path={r.property.photo} seed={r.id} height={140} />
               <View style={{ padding: 14, gap: 6 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <Body style={{ fontWeight: "800", flex: 1 }}>{r.property.name}</Body>
