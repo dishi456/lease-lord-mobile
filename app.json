@@ -35,6 +35,12 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Lease Lord uses your location to show rental properties near you."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#2563EB",

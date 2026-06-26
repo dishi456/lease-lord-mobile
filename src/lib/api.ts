@@ -178,7 +178,7 @@ export type MaintenanceDetail = Maintenance & { description: string; assignedTo:
 export type Complaint = { id: string; subject: string; status: string; createdAt: string };
 export type ComplaintDetail = Complaint & { description: string; updatedAt: string; property: { id: string; name: string } | null; messages: { id: string; body: string; authorId: string; mine: boolean; createdAt: string }[] };
 export type Notification = { id: string; type: string; title: string; body: string | null; link: string | null; read: boolean; createdAt: string };
-export type Listing = { id: string; ref: string | null; name: string; address: string; city: string; type: string; rent: number; securityDeposit: number; rooms: number | null; bathrooms: number | null; areaSqft: number | null; furnishing: string; amenities: string[]; available: boolean; verified: boolean; listedAt: string; photo: string | null };
+export type Listing = { id: string; ref: string | null; name: string; address: string; city: string; type: string; rent: number; securityDeposit: number; rooms: number | null; bathrooms: number | null; areaSqft: number | null; furnishing: string; amenities: string[]; available: boolean; verified: boolean; listedAt: string; photo: string | null; distanceKm?: number };
 export type PublicReview = { id: string; stars: number; feedback: string | null; createdAt: string; by: string };
 export type ListingDetail = Omit<Listing, "city" | "photo" | "listedAt"> & { description: string | null; maintenanceMonthly: number | null; balconies: number | null; floor: number | null; totalFloors: number | null; carpetAreaSqft: number | null; facing: string | null; bachelorsAllowed: boolean; projectName: string | null; parkingSpots: number | null; listedBy: string; hasLobby: boolean; hasParking: boolean; hasLift: boolean; powerBackup: boolean; availability: string; photos: string[]; landlord: { name: string; verified: boolean; rating: number | null; ratingCount: number }; reviews: PublicReview[] };
 export type Enquiry = { token: string; createdAt: string; updatedAt: string; unread: number; lastMessage: { body: string; fromGuest: boolean; createdAt: string } | null; property: { id: string; ref: string | null; name: string; address: string; photo: string | null } };
@@ -430,6 +430,11 @@ export const api = {
       items: rows<any>(d, "items").map((it) => ({ ...it, city: it.city ?? it.address ?? "" })) as Listing[],
       total: d.total ?? 0, page: d.page ?? 1, pageSize: d.pageSize ?? 20,
       pages: d.pages ?? d.totalPages, totalPages: d.totalPages ?? d.pages,
+    })),
+  listingsNearby: (lat: number, lng: number, opts?: { radius?: number; q?: string }) =>
+    request<any>("GET", "/listings/nearby", { auth: false, query: { lat, lng, radius: opts?.radius, q: opts?.q } }).then((d) => ({
+      items: rows<any>(d, "items").map((it) => ({ ...it, city: it.city || it.address || "" })) as Listing[],
+      total: d.total ?? 0,
     })),
   listingDetail: (idOrRef: string) =>
     request<any>("GET", `/listings/${idOrRef}`, { auth: false }).then((d) => {
