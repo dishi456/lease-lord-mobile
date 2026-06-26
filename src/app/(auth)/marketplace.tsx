@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, Muted, Body, Badge, Empty, ErrorText, money } from "@/components/ui";
 import { api, ApiError, type Listing } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors, spacing } from "@/lib/theme";
 
 const PAGE_SIZE = 10;
@@ -87,7 +85,7 @@ function ListingCard({ item, onPress }: { item: Listing; onPress: () => void }) 
   return (
     <Pressable onPress={onPress}>
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        <Image source={{ uri: fileUrl(item.photo) ?? houseImage(item.id) }} style={{ width: "100%", height: 170 }} contentFit="cover" transition={200} />
+        <PropertyImage path={item.photo} seed={item.id} height={170} />
         <View style={{ padding: spacing.lg, gap: 4 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Body style={{ fontWeight: "800", fontSize: 17, flex: 1 }}>{money(item.rent)}/mo</Body>

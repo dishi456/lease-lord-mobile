@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { GradientHeader } from "@/components/header";
 import { Card, Muted, Body, Badge, Empty, ErrorText, money } from "@/components/ui";
 import { api, ApiError, type Listing } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { getCoords, type Coords } from "@/lib/location";
 import { colors, spacing } from "@/lib/theme";
 
@@ -131,7 +129,7 @@ function ListingCard({ item, onPress }: { item: Listing; onPress: () => void }) 
   return (
     <Pressable onPress={onPress}>
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        <Image source={{ uri: fileUrl(item.photo) ?? houseImage(item.id) }} style={{ width: "100%", height: 170 }} contentFit="cover" transition={200} />
+        <PropertyImage path={item.photo} seed={item.id} height={170} />
         {item.distanceKm != null ? (
           <View style={{ position: "absolute", top: 10, left: 10, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 }}>
             <Ionicons name="location" size={12} color="#fff" />

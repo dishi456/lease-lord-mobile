@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Alert, Linking, RefreshControl, View } from "react-native";
-import { Image } from "expo-image";
 import { Screen, Card, H2, Muted, Body, Badge, Row, Loading, ErrorText, Button, money, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { openProtectedFile } from "@/lib/openFile";
 import { colors, radius } from "@/lib/theme";
 
@@ -48,11 +46,11 @@ export default function LeaseScreen() {
         </Card>
       ) : (
         <>
-          <Image
-            source={{ uri: fileUrl(lease.property.photos[0]) ?? houseImage(lease.property.id) }}
-            style={{ width: "100%", height: 180, borderRadius: radius.lg }}
-            contentFit="cover"
-            transition={200}
+          <PropertyImage
+            path={lease.property.photos[0]}
+            seed={lease.property.id}
+            height={180}
+            style={{ borderRadius: radius.lg }}
           />
           <Card>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>

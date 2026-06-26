@@ -9,7 +9,7 @@ import { useAsync } from "@/lib/useAsync";
 import { api, uploadPropertyPhoto, type LPropertyDetail } from "@/lib/api";
 import { detailLabel } from "@/lib/property-forms";
 import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors, radius } from "@/lib/theme";
 
 const AVAIL_NEXT: Record<string, string> = { AVAILABLE: "OCCUPIED", OCCUPIED: "UNAVAILABLE", UNAVAILABLE: "AVAILABLE" };
@@ -92,12 +92,12 @@ export default function PropertyDetail() {
     <Screen>
       {p.photos.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ borderRadius: radius.lg }}>
-          {p.photos.map((ph) => (
-            <Image key={ph} source={{ uri: fileUrl(ph) }} style={{ width: 320, height: 200, borderRadius: radius.lg, marginRight: 8 }} contentFit="cover" />
+          {p.photos.map((ph, i) => (
+            <PropertyImage key={ph} path={ph} seed={`${p.id}-${i}`} style={{ width: 320, height: 200, borderRadius: radius.lg, marginRight: 8 }} />
           ))}
         </ScrollView>
       ) : (
-        <Image source={{ uri: houseImage(p.id) }} style={{ width: "100%", height: 200, borderRadius: radius.lg }} contentFit="cover" transition={200} />
+        <PropertyImage seed={p.id} style={{ width: "100%", height: 200, borderRadius: radius.lg }} />
       )}
 
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

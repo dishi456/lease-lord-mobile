@@ -1,11 +1,8 @@
 import { RefreshControl, View } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, Muted, Body, Loading, ErrorText, Empty, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors, radius } from "@/lib/theme";
 
 export default function Enquiries() {
@@ -22,7 +19,7 @@ export default function Enquiries() {
       ) : (
         items.map((e) => (
           <Card key={e.token} style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-            <Image source={{ uri: fileUrl(e.property.photo) ?? houseImage(e.property.id) }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" transition={200} />
+            <PropertyImage path={e.property.photo} seed={e.property.id} style={{ width: 56, height: 56, borderRadius: radius.md }} />
             <View style={{ flex: 1 }}>
               <Body style={{ fontWeight: "700" }}>{e.property.name}</Body>
               {e.lastMessage ? (

@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Alert, Pressable, RefreshControl, View } from "react-native";
-import { Image } from "expo-image";
 import { Screen, Card, H2, Muted, Body, Loading, ErrorText, Empty, shortDate } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors } from "@/lib/theme";
 
 export default function Approvals() {
@@ -43,7 +41,7 @@ export default function Approvals() {
       <H2>Properties ({properties.length})</H2>
       {properties.length === 0 ? <Muted>No properties awaiting approval.</Muted> : properties.map((p) => (
         <Card key={p.id} style={{ padding: 0, overflow: "hidden" }}>
-          <Image source={{ uri: fileUrl(p.photo) ?? houseImage(p.id) }} style={{ width: "100%", height: 130 }} contentFit="cover" transition={200} />
+          <PropertyImage path={p.photo} seed={p.id} height={130} />
           <View style={{ padding: 14 }}>
             <Body style={{ fontWeight: "700" }}>{p.name}</Body>
             <Muted>{p.address}</Muted>

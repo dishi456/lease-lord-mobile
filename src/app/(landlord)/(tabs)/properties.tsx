@@ -1,12 +1,10 @@
 import { Pressable, RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, Muted, Body, Badge, Button, Loading, ErrorText, Empty, money } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors } from "@/lib/theme";
 
 export default function Properties() {
@@ -26,7 +24,7 @@ export default function Properties() {
         items.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/(landlord)/property/${p.id}`)}>
           <Card style={{ padding: 0, overflow: "hidden" }}>
-            <Image source={{ uri: fileUrl(p.photo) ?? houseImage(p.id) }} style={{ width: "100%", height: 150 }} contentFit="cover" transition={200} />
+            <PropertyImage path={p.photo} seed={p.id} height={150} />
             <View style={{ padding: 14, gap: 4 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Body style={{ fontWeight: "800", flex: 1 }}>{p.name}</Body>

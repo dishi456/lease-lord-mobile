@@ -5,8 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, H1, H2, Muted, Body, Badge, Row, Loading, ErrorText, Button, money } from "@/components/ui";
 import { useAsync } from "@/lib/useAsync";
 import { api } from "@/lib/api";
-import { fileUrl } from "@/lib/config";
-import { houseImage } from "@/lib/house-images";
+import { PropertyImage } from "@/components/PropertyImage";
 import { colors, radius } from "@/lib/theme";
 
 // Public listing detail (no auth) — reached from the marketplace.
@@ -22,12 +21,12 @@ export default function PublicListing() {
     <Screen>
       {data.photos.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ borderRadius: radius.lg }}>
-          {data.photos.map((p) => (
-            <Image key={p} source={{ uri: fileUrl(p) }} style={{ width: 320, height: 210, borderRadius: radius.lg, marginRight: 8 }} contentFit="cover" />
+          {data.photos.map((p, i) => (
+            <PropertyImage key={p} path={p} seed={`${id}-${i}`} style={{ width: 320, height: 210, borderRadius: radius.lg, marginRight: 8 }} />
           ))}
         </ScrollView>
       ) : (
-        <Image source={{ uri: houseImage(id) }} style={{ width: "100%", height: 210, borderRadius: radius.lg }} contentFit="cover" transition={200} />
+        <PropertyImage seed={id} style={{ width: "100%", height: 210, borderRadius: radius.lg }} />
       )}
 
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
