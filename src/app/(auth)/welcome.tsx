@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -39,8 +39,9 @@ export default function Welcome() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.listings({ pageSize: 6, sort: "newest" });
-        setFeatured(res.items);
+        const res = await api.listings({ pageSize: 16, sort: "newest" });
+        // Shuffle so the sign-in preview shows a different random mix each open.
+        setFeatured([...res.items].sort(() => Math.random() - 0.5));
       } catch {
         setFeatured([]);
       }
@@ -80,6 +81,8 @@ export default function Welcome() {
           <Text style={{ color: "#F59E0B", fontSize: 13, letterSpacing: 1 }}>★★★★★</Text>
           <Text style={s.trustText}>Trusted by landlords & tenants alike</Text>
         </Animated.View>
+
+        <FeaturedStrip items={featured} onOpen={(id) => router.push(`/(auth)/listing/${id}`)} />
 
         <View style={{ flex: 1, minHeight: 12 }} />
 
@@ -205,8 +208,39 @@ function BounceButton({ onPress, children }: { onPress: () => void; children: Re
   );
 }
 
+// Horizontal strip of real, tappable properties on the sign-in preview.
+function FeaturedStrip({ items, onOpen }: { items: Listing[]; onOpen: (id: string) => void }) {
+  if (items.length === 0) return null;
+  return (
+    <Animated.View entering={FadeInDown.delay(470).duration(600)} style={{ marginTop: 16 }}>
+      <Text style={s.stripTitle}>FEATURED HOMES</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
+        {items.slice(0, 8).map((p) => (
+          <Pressable key={p.id} onPress={() => onOpen(p.id)} style={s.fcard}>
+            {p.photo ? (
+              <Image source={{ uri: fileUrl(p.photo) }} style={{ width: "100%", height: 72 }} contentFit="cover" />
+            ) : (
+              <View style={{ height: 72, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="business" size={22} color="#94A3B8" />
+              </View>
+            )}
+            <View style={{ padding: 9 }}>
+              <Text style={s.fcardPrice} numberOfLines={1}>₹{(p.rent ?? 0).toLocaleString("en-IN")}/mo</Text>
+              <Text style={s.fcardSub} numberOfLines={1}>{p.city || p.name}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </Animated.View>
+  );
+}
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#F8FAFC" },
+  stripTitle: { fontSize: 11, fontWeight: "800", color: "#94A3B8", letterSpacing: 0.6, marginBottom: 9 },
+  fcard: { width: 138, borderRadius: 14, backgroundColor: "#fff", overflow: "hidden", borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#0B1220", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  fcardPrice: { fontWeight: "800", fontSize: 13.5, color: "#0F172A" },
+  fcardSub: { fontSize: 11, color: "#64748B", marginTop: 1 },
   hero: { width: "100%", backgroundColor: "#0B1220", overflow: "hidden" },
   heroTop: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingTop: 8 },
   heroBrand: { fontSize: 19, fontWeight: "800", color: "#fff" },
