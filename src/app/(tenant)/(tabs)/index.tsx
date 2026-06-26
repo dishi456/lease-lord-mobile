@@ -2,14 +2,30 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { GradientHeader, HeaderIcon } from "@/components/header";
 import { AccountMenu } from "@/components/AccountMenu";
 import { Loading, ErrorText, money, shortDate } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useAsync } from "@/lib/useAsync";
-import { api, type Dashboard, type Notification } from "@/lib/api";
+import { api, type Dashboard, type Notification, type ChatConversation } from "@/lib/api";
+import { authedImageUri } from "@/lib/openFile";
 import { colors } from "@/lib/theme";
+
+function msgTime(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay ? d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) : d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function msgPreview(c: ChatConversation) {
+  if (!c.lastMessage) return "No messages yet — say hello 👋";
+  const m = c.lastMessage;
+  const txt = m.body || (m.attachmentType === "image" ? "📷 Photo" : "📎 Attachment");
+  return `${m.mine ? "You: " : ""}${txt}`;
+}
 
 function greeting() {
   const h = new Date().getHours();
@@ -28,12 +44,18 @@ export default function Dashboard() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const { data, loading, refreshing, error, refresh } = useAsync(async () => {
-    const [dash, notifs] = await Promise.all([api.dashboard(), api.notifications()]);
-    return { dash, notifs: notifs.items.slice(0, 3) } as { dash: Dashboard; notifs: Notification[] };
+    const [dash, notifs, chats] = await Promise.all([
+      api.dashboard(),
+      api.notifications(),
+      api.chatConversations().catch(() => ({ items: [] as ChatConversation[] })),
+    ]);
+    return { dash, notifs: notifs.items.slice(0, 3), chats: chats.items.slice(0, 3) } as { dash: Dashboard; notifs: Notification[]; chats: ChatConversation[] };
   });
 
   if (loading) return <Loading />;
   const dash = data?.dash;
+  const chats = data?.chats ?? [];
+  const unreadTotal = chats.reduce((n, c) => n + (c.unread || 0), 0);
   const initial = (user?.fullName ?? "T").charAt(0).toUpperCase();
 
   return (
@@ -119,6 +141,39 @@ export default function Dashboard() {
             </Pressable>
           ) : (
             <View style={s.card}><Text style={s.muted}>No active lease yet. Your landlord will set this up.</Text></View>
+          )}
+        </View>
+
+        {/* Messages */}
+        <Section title={unreadTotal > 0 ? `Messages (${unreadTotal} new)` : "Messages"} actionLabel="All" onAction={() => router.push("/(tenant)/chat")} />
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          {chats.length === 0 ? (
+            <Pressable style={s.card} onPress={() => router.push("/(tenant)/chat")}>
+              <Text style={s.muted}>No conversations yet. Chat with your landlord once your lease is active.</Text>
+            </Pressable>
+          ) : (
+            chats.map((c) => {
+              const avatar = authedImageUri(c.other.avatarUrl) ?? authedImageUri(c.property.photo);
+              return (
+                <Pressable key={c.leaseId} style={s.activity} onPress={() => router.push(`/(tenant)/chat/${c.leaseId}`)}>
+                  <View style={s.msgAvatar}>
+                    {avatar ? <Image source={{ uri: avatar }} style={{ width: 44, height: 44 }} contentFit="cover" /> : <Text style={s.msgAvatarText}>{c.other.name.charAt(0).toUpperCase()}</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={s.activityTitle} numberOfLines={1}>{c.other.name}</Text>
+                      <Text style={s.activityTime}>{msgTime(c.lastMessage?.createdAt)}</Text>
+                    </View>
+                    <Text style={[s.muted, { color: c.unread ? colors.text : colors.muted, fontWeight: c.unread ? "600" : "400" }]} numberOfLines={1}>{msgPreview(c)}</Text>
+                  </View>
+                  {c.unread > 0 ? (
+                    <View style={s.msgBadge}><Text style={s.msgBadgeText}>{c.unread}</Text></View>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+                  )}
+                </Pressable>
+              );
+            })
           )}
         </View>
 
@@ -212,6 +267,11 @@ const s = StyleSheet.create({
 
   activity: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14 },
   activityDot: { width: 8, height: 8, borderRadius: 4 },
-  activityTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+  activityTitle: { fontSize: 14, fontWeight: "700", color: colors.text, flex: 1 },
   activityTime: { fontSize: 11, color: colors.subtle },
+
+  msgAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.infoBg, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  msgAvatarText: { color: colors.primary, fontWeight: "800", fontSize: 17 },
+  msgBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  msgBadgeText: { color: "#fff", fontWeight: "800", fontSize: 11 },
 });
