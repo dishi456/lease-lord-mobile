@@ -14,7 +14,7 @@ export const CURRENCIES: Record<string, Info> = {
 };
 export const CURRENCY_CODES = Object.keys(CURRENCIES);
 
-let current = "INR";
+let current = "USD";
 export function setCurrency(code?: string | null) {
   if (code && CURRENCIES[code]) current = code;
 }

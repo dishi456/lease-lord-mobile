@@ -19,15 +19,19 @@ export function PropertyImage({
   height?: number;
 }) {
   const [failed, setFailed] = useState(false);
-  // Only a genuinely uploaded photo (/api/files/...) or a real remote URL counts.
-  // Seed/demo placeholders like "demo/p1.png" are solid-colour stand-ins that load
-  // fine but aren't real photos — skip them and show a real house image instead.
-  const isReal = !!path && (path.startsWith("http") || path.includes("/api/files"));
+  // Only a genuinely uploaded photo or a real remote URL counts. Seed/demo
+  // placeholders are solid-colour stand-ins: "demo/p1.png", or backend docs with
+  // hyphenated ids like /api/files/sx-au-doc-01-0 (real uploads use hyphen-free
+  // cuid ids). Skip those and show a real house image instead.
+  const fileId = path?.match(/\/api\/files\/([^/?#]+)/)?.[1];
+  const isSeedDoc = !!fileId && fileId.includes("-");
+  const isReal = !!path && !isSeedDoc && (path.startsWith("http") || path.includes("/api/files"));
   const primary = isReal ? fileUrl(path) : undefined;
-  const uri = !failed && primary ? primary : houseImage(seed);
+  // Real photo → load by URL; otherwise (or on load failure) → a bundled house photo.
+  const source = !failed && primary ? { uri: primary } : houseImage(seed);
   return (
     <Image
-      source={{ uri }}
+      source={source}
       style={[height != null ? { width: "100%", height } : null, style]}
       contentFit="cover"
       transition={200}

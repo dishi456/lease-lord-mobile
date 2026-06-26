@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions, type ImageSourcePropType } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Logo } from "@/components/Logo";
+import { HOUSE_IMAGES } from "@/lib/house-images";
 
 // Flagship-style welcome: full-bleed rotating property hero with floating live
 // activity cards, and a white sheet that lifts over the image carrying the
@@ -27,18 +28,6 @@ import { Logo } from "@/components/Logo";
 
 const BLUE = "#2563EB";
 const CYAN = "#06B6D4";
-
-// Real property photos for the hero carousel (curated, royalty-free).
-const HOUSE_IMAGES = [
-  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&q=70",
-  "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=900&q=70",
-  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&q=70",
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&q=70",
-  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=900&q=70",
-  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=70",
-  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=70",
-  "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&q=70",
-];
 
 export default function Welcome() {
   const router = useRouter();
@@ -107,7 +96,7 @@ export default function Welcome() {
 }
 
 // --- Full-bleed rotating hero with Ken-Burns + floating activity cards ------
-function Hero({ photos, height }: { photos: string[]; height: number }) {
+function Hero({ photos, height }: { photos: ImageSourcePropType[]; height: number }) {
   const ids = photos.slice(0, 6);
   const [idx, setIdx] = useState(0);
   const fade = useSharedValue(1);
@@ -142,7 +131,7 @@ function Hero({ photos, height }: { photos: string[]; height: number }) {
     <View style={[s.hero, { height }]}>
       {ids.length > 0 ? (
         <Animated.View style={[StyleSheet.absoluteFill, imgStyle]}>
-          <Image source={{ uri: ids[idx] }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+          <Image source={ids[idx]} style={{ width: "100%", height: "100%" }} contentFit="cover" />
         </Animated.View>
       ) : (
         <LinearGradient colors={[BLUE, "#1D4ED8", "#0E7490"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -165,7 +154,7 @@ function Hero({ photos, height }: { photos: string[]; height: number }) {
       {/* floating activity cards */}
       <Animated.View style={[s.floatCard, { top: height * 0.36, left: 18 }, f1Style]} entering={FadeIn.delay(500).duration(700)}>
         <View style={[s.floatIcon, { backgroundColor: "#ECFDF5" }]}><Ionicons name="checkmark-circle" size={15} color="#059669" /></View>
-        <View><Text style={s.floatTop}>Rent paid</Text><Text style={[s.floatBot, { color: "#059669" }]}>₹2,500</Text></View>
+        <View><Text style={s.floatTop}>Rent paid</Text><Text style={[s.floatBot, { color: "#059669" }]}>$2,500</Text></View>
       </Animated.View>
       <Animated.View style={[s.floatCard, { top: height * 0.5, right: 18 }, f2Style]} entering={FadeIn.delay(750).duration(700)}>
         <View style={[s.floatIcon, { backgroundColor: "#FFFBEB" }]}><Ionicons name="star" size={15} color="#F59E0B" /></View>
