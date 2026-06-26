@@ -1,126 +1,157 @@
-import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Card, Muted, Body, Loading, ErrorText, Empty, money } from "@/components/ui";
-import { useAsync } from "@/lib/useAsync";
-import { api, type MktListing } from "@/lib/api";
-import { authedImageUri } from "@/lib/openFile";
-import { CATEGORIES, condLabel } from "@/lib/marketplace";
-import { colors, radius } from "@/lib/theme";
+import { GradientHeader } from "@/components/header";
+import { Card, Muted, Body, Badge, Empty, ErrorText, money } from "@/components/ui";
+import { api, ApiError, type Listing } from "@/lib/api";
+import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
+import { getCoords, type Coords } from "@/lib/location";
+import { colors, spacing } from "@/lib/theme";
 
-const SCOPES = [{ k: "all", l: "Browse" }, { k: "mine", l: "My listings" }, { k: "favorites", l: "Wishlist" }];
+const PAGE_SIZE = 10;
 
-function ListingCard({ l, onFav, onOpen }: { l: MktListing; onFav: () => void; onOpen: () => void }) {
-  const img = authedImageUri(l.images[0]);
+// Tenant "Market" tab: browse rental properties only (no second-hand items).
+export default function Marketplace() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"near" | "all">("all");
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [locating, setLocating] = useState(true);
+  const [items, setItems] = useState<Listing[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // On open, ask for location. If granted, default to "Near me".
+  useEffect(() => {
+    (async () => {
+      const { coords: c } = await getCoords();
+      if (c) { setCoords(c); setMode("near"); }
+      setLocating(false);
+    })();
+  }, []);
+
+  const load = useCallback(async (nextPage: number, term: string, replace: boolean, m: "near" | "all", c: Coords | null) => {
+    setLoading(true);
+    setError("");
+    try {
+      if (m === "near" && c) {
+        const res = await api.listingsNearby(c.lat, c.lng, { q: term, radius: 50 });
+        setItems(res.items);
+        setPage(1); setPages(1); setTotal(res.total);
+      } else {
+        const res = await api.listings({ q: term, page: nextPage, pageSize: PAGE_SIZE, sort: "newest" });
+        setItems((prev) => (replace ? res.items : [...prev, ...res.items]));
+        setPage(res.page); setPages(res.pages ?? res.totalPages ?? 1); setTotal(res.total);
+      }
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not load properties.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (locating) return;
+    load(1, query, true, mode, coords);
+  }, [query, mode, coords, locating, load]);
+
+  async function enableNearMe() {
+    if (coords) { setMode("near"); return; }
+    setLocating(true);
+    const { coords: c, denied } = await getCoords();
+    setLocating(false);
+    if (c) { setCoords(c); setMode("near"); }
+    else setError(denied ? "Location permission denied. Enable it in Settings to see nearby properties." : "Couldn't get your location.");
+  }
+
   return (
-    <Pressable onPress={onOpen} style={{ width: "48%" }}>
-      <Card style={{ padding: 0, overflow: "hidden", gap: 0 }}>
-        <View>
-          {img ? (
-            <Image source={{ uri: img }} style={{ width: "100%", height: 120 }} contentFit="cover" />
-          ) : (
-            <View style={{ height: 120, backgroundColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="pricetag" size={28} color={colors.subtle} />
-            </View>
-          )}
-          <Pressable onPress={onFav} hitSlop={8} style={{ position: "absolute", top: 6, right: 6, backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 14, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name={l.favorited ? "heart" : "heart-outline"} size={16} color={l.favorited ? "#EF4444" : colors.text} />
-          </Pressable>
-          {l.status === "SOLD" ? (
-            <View style={{ position: "absolute", bottom: 6, left: 6, backgroundColor: colors.text, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 10 }}>SOLD</Text>
-            </View>
-          ) : null}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <GradientHeader>
+        <Text style={{ color: "#fff", fontSize: 22, fontWeight: "800" }}>Properties</Text>
+        <Text style={{ color: "#DBEAFE", fontSize: 13, marginTop: 2 }}>
+          {mode === "near" ? `${total} ${total === 1 ? "property" : "properties"} near you` : total > 0 ? `${total} verified ${total === 1 ? "property" : "properties"}` : "Browse verified rentals"}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fff", borderRadius: 14, paddingHorizontal: 12, marginTop: 14 }}>
+          <Ionicons name="search" size={18} color={colors.subtle} />
+          <TextInput
+            value={q} onChangeText={setQ} placeholder="Search city, area, project…" placeholderTextColor={colors.subtle}
+            style={{ flex: 1, paddingVertical: 12, color: colors.text, fontSize: 15 }} returnKeyType="search"
+            onSubmitEditing={() => setQuery(q.trim())}
+          />
+          {q ? <Pressable onPress={() => { setQ(""); setQuery(""); }} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.subtle} /></Pressable> : null}
         </View>
-        <View style={{ padding: 10, gap: 2 }}>
-          <Body style={{ fontWeight: "800" }} numberOfLines={1}>{money(l.price)}</Body>
-          <Muted numberOfLines={1}>{l.title}</Muted>
-          <Muted style={{ fontSize: 11 }}>{condLabel(l.condition)}{l.location ? ` · ${l.location}` : ""}</Muted>
+        {/* Near me / All toggle */}
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+          <TogglePill icon="location" label="Near me" active={mode === "near"} onPress={enableNearMe} />
+          <TogglePill icon="grid" label="All" active={mode === "all"} onPress={() => setMode("all")} />
         </View>
-      </Card>
+      </GradientHeader>
+
+      <ErrorText>{error}</ErrorText>
+
+      {locating ? (
+        <View style={{ alignItems: "center", paddingVertical: 30 }}>
+          <ActivityIndicator color={colors.primary} />
+          <Muted style={{ marginTop: 8 }}>Finding properties near you…</Muted>
+        </View>
+      ) : null}
+
+      <FlatList
+        data={items}
+        keyExtractor={(it) => it.id}
+        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: 32 }}
+        renderItem={({ item }) => <ListingCard item={item} onPress={() => router.push(`/(user)/listing/${item.id}`)} />}
+        ListEmptyComponent={!loading && !locating ? <Empty title={mode === "near" ? "No properties near you" : "No properties found"} subtitle={mode === "near" ? "Try widening to All." : "Try a different search."} /> : null}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => { if (mode === "all" && !loading && page < pages) load(page + 1, query, false, mode, coords); }}
+        ListFooterComponent={loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} /> : null}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
+  );
+}
+
+function TogglePill({ icon, label, active, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: active ? "#fff" : "rgba(255,255,255,0.18)" }}>
+      <Ionicons name={icon} size={14} color={active ? colors.primary : "#fff"} />
+      <Text style={{ fontWeight: "700", fontSize: 13, color: active ? colors.primary : "#fff" }}>{label}</Text>
     </Pressable>
   );
 }
 
-export default function Marketplace() {
-  const router = useRouter();
-  const [scope, setScope] = useState("all");
-  const [category, setCategory] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [q, setQ] = useState("");
-  const { data, loading, refreshing, error, refresh, reload } = useAsync(
-    () => api.marketplaceListings({ scope, category: category ?? undefined, q: q || undefined }),
-    [scope, category, q],
-  );
-  const items = data?.items ?? [];
-
-  async function toggleFav(l: MktListing) {
-    try { await api.marketplaceFavorite(l.id, !l.favorited); reload(); } catch { /* ignore */ }
-  }
-
+function ListingCard({ item, onPress }: { item: Listing; onPress: () => void }) {
   return (
-    <Screen scroll={false}>
-      <View style={{ flex: 1, gap: 12 }}>
-        {/* Search + Sell */}
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 12 }}>
-            <Ionicons name="search" size={18} color={colors.subtle} />
-            <TextInput
-              value={search} onChangeText={setSearch} onSubmitEditing={() => setQ(search.trim())} returnKeyType="search"
-              placeholder="Search items…" placeholderTextColor={colors.subtle}
-              style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 8, color: colors.text }}
-            />
-            {search ? <Pressable onPress={() => { setSearch(""); setQ(""); }} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.subtle} /></Pressable> : null}
+    <Pressable onPress={onPress}>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <Image source={{ uri: fileUrl(item.photo) ?? houseImage(item.id) }} style={{ width: "100%", height: 170 }} contentFit="cover" transition={200} />
+        {item.distanceKm != null ? (
+          <View style={{ position: "absolute", top: 10, left: 10, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 }}>
+            <Ionicons name="location" size={12} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>{item.distanceKm} km</Text>
           </View>
-          <Pressable onPress={() => router.push("/(tenant)/sell")} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: 14 }}>
-            <Ionicons name="add" size={18} color="#fff" />
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Sell</Text>
-          </Pressable>
+        ) : null}
+        <View style={{ padding: spacing.lg, gap: 4 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Body style={{ fontWeight: "800", fontSize: 17, flex: 1 }}>{money(item.rent)}/mo</Body>
+            {item.verified ? <Badge label="VERIFIED" /> : null}
+          </View>
+          <Body style={{ fontWeight: "600" }}>{item.name}</Body>
+          <Muted>{item.city}</Muted>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
+            {item.rooms != null ? <Muted>{item.rooms} BHK</Muted> : null}
+            {item.bathrooms != null ? <Muted>{item.bathrooms} bath</Muted> : null}
+            {item.areaSqft != null ? <Muted>{item.areaSqft} sqft</Muted> : null}
+          </View>
         </View>
-
-        {/* Scope */}
-        <View style={{ flexDirection: "row", backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: 3 }}>
-          {SCOPES.map((s) => {
-            const active = scope === s.k;
-            return (
-              <Pressable key={s.k} onPress={() => setScope(s.k)} style={{ flex: 1, paddingVertical: 8, borderRadius: radius.sm, backgroundColor: active ? colors.primary : "transparent", alignItems: "center" }}>
-                <Text style={{ fontWeight: "700", fontSize: 12, color: active ? "#fff" : colors.muted }}>{s.l}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }} style={{ maxHeight: 40 }}>
-          <CategoryChip label="All" active={!category} onPress={() => setCategory(null)} />
-          {CATEGORIES.map((c) => <CategoryChip key={c} label={c} active={category === c} onPress={() => setCategory(c)} />)}
-        </ScrollView>
-
-        <ErrorText>{error}</ErrorText>
-        {loading ? (
-          <Loading />
-        ) : items.length === 0 ? (
-          <Empty title="Nothing here yet" subtitle={scope === "mine" ? "Tap Sell to list an item." : scope === "favorites" ? "Tap the heart on items to save them." : "Try a different category or search."} />
-        ) : (
-          <ScrollView
-            contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, paddingBottom: 24 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-            showsVerticalScrollIndicator={false}
-          >
-            {items.map((l) => <ListingCard key={l.id} l={l} onFav={() => toggleFav(l)} onOpen={() => router.push(`/(tenant)/item/${l.id}`)} />)}
-          </ScrollView>
-        )}
-      </View>
-    </Screen>
-  );
-}
-
-function CategoryChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.infoBg : colors.card, height: 36 }}>
-      <Text style={{ fontWeight: "700", fontSize: 12, color: active ? colors.primary : colors.text }}>{label}</Text>
+      </Card>
     </Pressable>
   );
 }

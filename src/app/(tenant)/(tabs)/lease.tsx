@@ -5,6 +5,7 @@ import { Screen, Card, H2, Muted, Body, Badge, Row, Loading, ErrorText, Button, 
 import { useAsync } from "@/lib/useAsync";
 import { api, ApiError } from "@/lib/api";
 import { fileUrl } from "@/lib/config";
+import { houseImage } from "@/lib/house-images";
 import { openProtectedFile } from "@/lib/openFile";
 import { colors, radius } from "@/lib/theme";
 
@@ -47,9 +48,12 @@ export default function LeaseScreen() {
         </Card>
       ) : (
         <>
-          {lease.property.photos[0] ? (
-            <Image source={{ uri: fileUrl(lease.property.photos[0]) }} style={{ width: "100%", height: 180, borderRadius: radius.lg }} contentFit="cover" />
-          ) : null}
+          <Image
+            source={{ uri: fileUrl(lease.property.photos[0]) ?? houseImage(lease.property.id) }}
+            style={{ width: "100%", height: 180, borderRadius: radius.lg }}
+            contentFit="cover"
+            transition={200}
+          />
           <Card>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <H2>{lease.property.name}</H2>

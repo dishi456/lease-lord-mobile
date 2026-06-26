@@ -24,7 +24,7 @@ export default function TenantTabs() {
       <Tabs.Screen name="lease" options={{ title: "Lease", tabBarIcon: tab("document-text") }} />
       <Tabs.Screen name="payments" options={{ title: "Rent", tabBarIcon: tab("card") }} />
       <Tabs.Screen name="maintenance" options={{ title: "Requests", tabBarIcon: tab("construct") }} />
-      <Tabs.Screen name="marketplace" options={{ title: "Market", headerShown: false, tabBarIcon: tab("storefront") }} />
+      <Tabs.Screen name="marketplace" options={{ title: "Browse", headerShown: false, tabBarIcon: tab("search") }} />
       <Tabs.Screen name="more" options={{ title: "More", tabBarIcon: tab("ellipsis-horizontal-circle") }} />
     </Tabs>
   );
